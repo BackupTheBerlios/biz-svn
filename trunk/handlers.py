@@ -34,7 +34,7 @@ class BaseHandler:
 	error_status = "500 Dude, this is whack!"
 	error_headers = [('Content-Type','text/plain')]
 	error_body = "A server error occurred.  Please contact the administrator."
-    
+
 	# State variables (don't mess with these)
 	status = result = None
 	headers_sent = False
