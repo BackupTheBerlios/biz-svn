@@ -2,16 +2,19 @@
 
 
 import imp
-
+import time
+import os
+import os.path
 
 
 class Application(object):
-	__slots__ = "name","path","body","usage"
+	__slots__ = "name","path","body","mtime","usage"
 
-	def __init__(self, name, path, body):
+	def __init__(self, name, path, body, mtime=None):
 		self.name = name
 		self.path = path
 		self.body = body
+		self.mtime = mtime
 		self.usage = 0
 
 
@@ -24,20 +27,24 @@ class Root:
 
 	def register_app(self, name, path):
 		if name not in self._applist:
-			self._applist[name] = Application(name, path, None)
+			self._applist[name] = Application(name, path, None, os.stat(path).st_mtime)
 
-	def register_index(self, name, path):
-		self._index = Application(name, path, self._load_body(name, path))
+	##def register_index(self, name, path):
+	##    self._index = Application(name, path, self._load_body(name, path))
+	##
+	##def register_error(self, name, path):
+	##    self._error = Application(name, path, self._load_body(name, path))
 
-	def register_error(self, name, path):
-		self._error = Application(name, path, self._load_body(name, path))
-
-	def _load_body(self, name, path):
-		return imp.load_module(name, *imp.find_module(name, [path]))
+	##def _load_body(self, name, path):
+	def _load_body(self, path):
+		path, modname = os.path.split(path)
+		modname = modname.split(".py")[0]
+		##return imp.load_module(name, *imp.find_module(name, [path]))
+		return imp.load_module(modname, *imp.find_module(modname, [path]))
 
 	def _cache_app(self, name):
 		app = self._applist[name]
-		app.body = self._load_body(name, app.path)
+		app.body = self._load_body(app.path)
 		self._apps[name] = app
 
 	def _uncache_app(self, name):
@@ -74,8 +81,9 @@ class Root:
 			return tuple(l)
 
 		path = [p for p in environ["PATH_INFO"].split("/") if p] or [""]
-		if "QUERY_INFO" in environ:
-			params = dict([tuplize(x) for x in environ["QUERY_INFO"].split("&") if x])
+		if "QUERY_STRING" in environ:
+			print "x"  ##
+			params = dict([tuplize(x) for x in environ["QUERY_STRING"].split("&") if x])
 		else:
 			params = {}
 
@@ -93,6 +101,11 @@ class Root:
 			try:
 				name = path[0]
 				app = self._apps[name]
+				# check whether the application is modified
+				mt = os.stat(app.path).st_mtime
+				if not app.mtime or mt > app.mtime:
+					app.body = self._load_body(app.path)
+					
 				in_cache = 1
 			except KeyError:  # app is not cached
 				try:
@@ -116,8 +129,11 @@ class Root:
 
 
 root = Root()
-root.register_app("hello", "apps")
-root.register_app("sum", "apps")
-##root.register_app("wello", "apps")
-root.register_index("wello", "apps")
+##root.register_app("hello", "apps")
+root.register_app("sum", "apps/sum/__init__.py")
+##root.register_app("file", "apps")
+root.register_app("zello", "apps/wello.py")
+##root.register_index("wello", "apps")
+##root.register_app("bizpath", "apps")
+##root.register_app("name", "apps")
 

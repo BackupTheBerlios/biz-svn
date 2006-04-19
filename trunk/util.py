@@ -33,12 +33,6 @@ class FileWrapper:
 		raise StopIteration
 
 
-
-
-
-
-
-
 def guess_scheme(environ):
 	"""Return a guess for whether 'wsgi.url_scheme' should be 'http' or 'https'
 	"""
@@ -158,9 +152,6 @@ def setup_testing_defaults(environ):
 		environ.setdefault('SERVER_PORT', '80')
 	elif environ['wsgi.url_scheme']=='https':
 		environ.setdefault('SERVER_PORT', '443')
-
-
-
 
 _hoppish = {
 	'connection':1, 'keep-alive':1, 'proxy-authenticate':1,

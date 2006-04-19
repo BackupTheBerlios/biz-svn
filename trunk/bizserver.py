@@ -16,11 +16,11 @@ module.  See also the BaseHTTPServer module docs for other API information.
 from optparse import OptionParser
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import urllib, sys
-from biz.handlers import SimpleHandler
-from biz.root import Root
+from handlers import SimpleHandler
+from root import Root
 
 __version__ = "0.1"
-__all__ = ['WSGIServer','WSGIRequestHandler']
+__all__ = ['BizWSGIServer','BizWSGIRequestHandler']
 
 
 server_version = "BizWSGIServer/" + __version__
@@ -164,23 +164,6 @@ def main():
 
 if __name__ == '__main__':
 	main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
