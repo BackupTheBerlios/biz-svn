@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# Adapted from P. J. Eby's simple_server.py
+# Based on P. J. Eby's simple_server.py
 
 """BaseHTTPServer that implements the Python WSGI protocol (PEP 333, rev 1.21)
 
@@ -17,7 +17,6 @@ from optparse import OptionParser
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import urllib, sys
 from handlers import SimpleHandler
-from root import Root
 
 __version__ = "0.1"
 __all__ = ['BizWSGIServer','BizWSGIRequestHandler']
@@ -146,7 +145,6 @@ def main():
 	count = int(ops.count)
 
 	httpd = BizWSGIServer(address, BizWSGIRequestHandler)
-	##httpd.set_app(demo_app)
 	httpd.set_app(root.root)
 	sa = httpd.socket.getsockname()
 
