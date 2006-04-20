@@ -7,21 +7,37 @@ import mimetypes
 from biz.response import Response, TextContent, HtmlContent, FileContent
 
 class VirtualFolder:
-	def __init__(self, environ, start_response, location, wildcard="*"):
+	def __init__(self, environ, start_response):
+		"""init the application
+
+		environ["biz.app.virtualfolder.location"] should point to the
+		preferred starting directory
+		environ["biz.app.virtualfolder.wildcard"] may contain the wildcard
+		(default: *).
+		"""
 		self.environ = environ
 		self.start_response = start_response
 
-		self.location = location
+		self.location = environ["biz.app.virtualfolder.location"]
 		if not self.location.endswith("/"):
 			self.location += "/"
 			
-		self.wildcard = wildcard
+		self.wildcard = environ.get("biz.app.virtualfolder.wildcard", "*")
 		self.mime_handlers = {}
 		
 	def __call__(self):
 		path_items = self.environ["biz.path"]
-		path = "/".join(path_items[1:])
-		self.name = path_items[0]
+
+		if not path_items:  # registered as index handler or error on /
+			path = ""
+			self.name = ""
+		elif not self.environ.has_key("biz.error.code"):  # normal condition
+			path = "/".join(path_items[1:])
+			self.name = path_items[0]
+		else:  # registered as error handler
+			path = "/".join(path_items)
+			self.name = ""
+
 		start_response = self.start_response
 		newpath = os.path.join(self.location, path)
 
@@ -101,7 +117,8 @@ def zip_handler(start_response, fname):
 	return Response(start_response, content=HtmlContent(page))
 
 def run(environ, start_response):
-	vfolder = VirtualFolder(environ, start_response, "/home/yuce/dev/python/biz/apps/vfolder/test")
+	environ["biz.app.virtualfolder.location"] = "/home/yuce/dev/python/biz/apps/vfolder/test"
+	vfolder = VirtualFolder(environ, start_response)
 	vfolder.add_handler("text/x-python", python_handler)
 	vfolder.add_handler("application/zip", zip_handler)
 	

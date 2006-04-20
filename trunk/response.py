@@ -1,7 +1,6 @@
 # response.py
 
-import os
-from cStringIO import StringIO
+from content import EmptyContent
 
 
 RESPONSES = {
@@ -70,57 +69,6 @@ RESPONSES = {
         505: ('HTTP Version not supported', 'Cannot fulfill request.'),
         }
 
-class Content(object):
-	__slots__ = "ctype","_clen","_descriptor"
-	
-	def __init__(self, ctype):
-		self.ctype = ctype
-		self._clen = 0
-		
-	def get_filedescriptor(self):
-		"""return a file descriptor of the content.
-		
-		Override this.
-		"""
-		return None
-
-
-class TextContent(Content):
-	__slots__ = "content"
-	
-	def __init__(self, content=u""):
-		Content.__init__(self, "text/plain")
-		self.content = str(content)
-		self._clen = len(self.content)
-		self._descriptor = None		
-		
-	def get_filedescriptor(self):
-		if not self._descriptor:
-			self._descriptor = StringIO(self.content)
-			
-		return self._descriptor
-
-
-class EmptyContent(TextContent):
-	def __init__(self):
-		TextContent.__init__(self, u"")
-
-
-class HtmlContent(TextContent):
-	def __init__(self, content=u""):
-		TextContent.__init__(self, content)
-		self.ctype = "text/html"
-		
-		
-class FileContent(Content):
-	def __init__(self, filename, ctype):
-		Content.__init__(self, ctype)
-		self._descriptor = file(filename, "rb")
-		self._clen = os.stat(filename).st_size
-		
-	def get_filedescriptor(self):
-		return self._descriptor	
-
 
 class Response:
 	def __init__(self, start_response, code=200, content=EmptyContent()):
@@ -129,15 +77,17 @@ class Response:
 		self.heads = {}
 		self.start_response = start_response
 		
-	def __iter__(self):
+	def get_response(self):
 		self.heads["content-type"] = self.content.ctype
 		self.heads["content-length"] = str(self.content._clen)
 
 		self._other_headers()
 
-		self.start_response("%d %s" % (self.rcode,RESPONSES.get(self.rcode, ["Unknown"])[0]),
+		self.start_response("%d %s" % \
+				(self.rcode,RESPONSES.get(self.rcode, ["Unknown"])[0]),
 				[x for x in self.heads.iteritems()])		
-		return self.content.get_filedescriptor()
+		##return self.content.get_filedescriptor()
+		return self.content.get_content()
 		
 	def _other_headers(self):  # TODO: Change name of this
 		"""send other headers.
