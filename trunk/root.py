@@ -89,7 +89,7 @@ class ApplicationInfo(object):
 
 class BizRoot:
 	def __init__(self):
-		self._apps = {}  # cached apps
+##		self._apps = {}  # cached apps
 		self._applist = {}  # all apps
 		self._index = None  # index app
 		self._error = None
@@ -99,6 +99,12 @@ class BizRoot:
 	def register_app(self, name, cpath):
 		if name not in self._applist:
 			self._applist[name] = ApplicationInfo(name, cpath=cpath)
+
+	def register_index(self, name, cpath):
+		self._index = ApplicationInfo(name, cpath=cpath)
+
+	def register_error(self, name, cpath):
+		self._error = ApplicationInfo(name, cpath=cpath)
 
 	def _default_index(self):
 		try:
@@ -144,34 +150,22 @@ class BizRoot:
 			if not self._index:
 				return self._default_index()
 
-			app = self._index
-				
-			in_cache = 1
-
+			app = self._index(environ, start_response)
 		else:
 			try:
 				name = path[0]
-				app = self._apps[name](environ, start_response)
-					
-				in_cache = 1
-			except KeyError:  # app is not cached
-				try:
-					app = self._applist[name]
-					self._apps[name] = app(environ, start_response)
-					in_cache = 0
-				except KeyError:
-					environ["biz.error.code"] = "404"
-					environ["biz.error.message"] = "Method not found."
+				app = self._applist[name](environ, start_response)
+			except KeyError:
+				environ["biz.error.code"] = "404"
+				environ["biz.error.message"] = "Method not found."
 
-					if self._error:
-						app = self._error
-						in_cache = 1
-					else:
-						return self._default_error()					
+				if self._error:
+					app = self._error(environ, start_response)
+				else:
+					return self._default_error()					
 
 		app.usage += 1
 		environ["biz.debug.app.usage"] = str(app.usage)
-		environ["biz.debug.app.in_cache"] = str(in_cache)
 
 		app.body.refresh(environ, start_response)
 		app.body.run()
@@ -191,5 +185,18 @@ class BizRoot:
 		for app, cpath in cfg.items(apps):
 			if not app in self._applist:
 				self.register_app(app, cpath)
+
+		index = "index"
+		if cfg.has_section(index):
+			app,cpath = cfg.items(index)[0]
+			self.register_index(app, cpath)
+
+		error = "error"
+		if cfg.has_section(error):
+			app,cpath = cfg.items(error)[0]
+			self.register_error(app, cpath)
+
+
+
 
 

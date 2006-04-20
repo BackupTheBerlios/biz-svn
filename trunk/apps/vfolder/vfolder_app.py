@@ -9,21 +9,20 @@ from biz.app import Application
 from biz.content import TextContent, HtmlContent, FileContent
 
 class VirtualFolder(Application):
-	def __init__(self, environ, start_response):
-		"""init the application
+	"""	environ["virtualfolder.location"] should point to the
+	preferred starting directory
+	environ["virtualfolder.wildcard"] may contain the wildcard
+	(default: *).
+	"""
+	def static(self):
+		self.location = self.options.get("vfolder.location", "")
+		assert self.location, \
+				"virtualfolder.location should be set"
 
-		environ["biz.app.virtualfolder.location"] should point to the
-		preferred starting directory
-		environ["biz.app.virtualfolder.wildcard"] may contain the wildcard
-		(default: *).
-		"""
-		Application.__init__(self, environ, start_response)
-
-		self.location = environ["biz.app.virtualfolder.location"]
 		if not self.location.endswith("/"):
 			self.location += "/"
 			
-		self.wildcard = environ.get("biz.app.virtualfolder.wildcard", "*")
+		self.wildcard = self.options.get("vfolder.wildcard", "*")
 		self.mime_handlers = {}
 		
 	def run(self):
@@ -95,7 +94,8 @@ class VirtualFolder(Application):
 		
 
 def python_handler(fname):
-	from apps.vfolder import pycolorize
+	from biz.apps.vfolder import pycolorize
+
 	f = file(fname)
 	p = pycolorize.Parser(f.read())
 	f.close()
@@ -107,6 +107,7 @@ def source_handler(fname):
 
 def zip_handler(fname):
 	import zipfile
+
 	try:
 		f = zipfile.ZipFile(fname)
 	except IOError:
@@ -119,9 +120,8 @@ def zip_handler(fname):
 						
 	return HtmlContent(page)
 
-def load(environ, start_response):
-	environ["biz.app.virtualfolder.location"] = "/home/yuce/dev/python/biz/apps/vfolder/test"
-	vfolder = VirtualFolder(environ, start_response)
+def load(environ, start_response, options):
+	vfolder = VirtualFolder(environ, start_response, options)
 	vfolder.add_handler("text/x-python", python_handler)
 	vfolder.add_handler("application/zip", zip_handler)
 	
