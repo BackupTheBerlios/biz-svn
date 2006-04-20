@@ -135,7 +135,6 @@ class BizRoot:
 
 		app.body.refresh(environ, start_response)
 		app.body.run()
-		##return app.body.run(environ, start_response)
 		return app.body.get_response()
 
 
@@ -145,6 +144,7 @@ root.register_index("apps/wello.py", hotplug=True)
 ##root.register_error("apps/vfolder/vfolder_app.py", hotplug=True)
 root.register_app("sum", "apps/sum/sum_app.py", hotplug=True)
 root.register_app("zello", "apps/wello.py", hotplug=True)
-##root.register_app("name", "apps/name.py", hotplug=True)
+root.register_app("name", "apps/name.py", hotplug=True)
 root.register_app("favicon.ico", "apps/favicon.py", hotplug=True)
+root.register_app("files", "apps/vfolder/vfolder_app.py", hotplug=True)
 

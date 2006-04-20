@@ -5,9 +5,6 @@ from biz.response import Response
 
 class Application:
 	def __init__(self, environ, start_response):
-		##self.environ = environ
-		##self.start_response = start_response
-		##self.response = Response(start_response, content=None)
 		self.rcode = 200
 		self.content = None
 		self.rheads = None
@@ -22,11 +19,6 @@ class Application:
 		"""
 		self.environ = environ
 		self.response = Response(start_response, content=None)
-		##self.rcode = 200
-		##self.content = None
-		##self.rheads = None
-
-		##self.run()
 
 	def static(self):
 		"""prepare static content

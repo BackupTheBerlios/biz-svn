@@ -1,6 +1,6 @@
 
 from biz.app import Application
-from content import TextContent
+from biz.content import TextContent
 
 
 class Wello(Application):

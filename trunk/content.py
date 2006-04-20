@@ -25,14 +25,9 @@ class TextContent(Content):
 		Content.__init__(self, "text/plain")
 		self.content = str(content)
 		self._clen = len(self.content)
-##		self._descriptor = None		
 		
 	def get_content(self):
 		return [self.content]
-		##if not self._descriptor:
-			##self._descriptor = StringIO(self.content)
-			
-		##return self._descriptor
 
 
 class EmptyContent(TextContent):
@@ -47,13 +42,15 @@ class HtmlContent(TextContent):
 		
 		
 class FileContent(Content):
+	__slots__ = "_descriptor"
+
 	def __init__(self, filename, ctype):
 		Content.__init__(self, ctype)
-		##self._descriptor = file(filename, "rb")
+		self._descriptor = file(filename, "rb")
 		self._clen = os.stat(filename).st_size
 		
 	def get_content(self):
-		return file(filename, "rb")	
+		return self._descriptor
 
 
 class CachedFileContent(Content):

@@ -1,13 +1,19 @@
 
-from biz.response import Response, TextContent, HtmlContent
+from biz.app import Application
+from biz.content import TextContent, HtmlContent
 
-def run(environ, start_response):
-	params = environ["biz.params"]
 
-	try:
-		page = "Your name is: <b>%(name)s %(surname)s</b>. It's a nice name!" % params
-		return Response(start_response, content=HtmlContent(page))
+class Name(Application):
+	def run(self):
+		params = self.environ["biz.params"]
 
-	except KeyError:
-		return Response(start_response, content=TextContent("Invalid request"))
+		try:
+			page = "Your name is: <b>%(name)s %(surname)s</b>. It's a nice name!" % params
+			self.content = HtmlContent(page)
+		except KeyError:
+			self.content = TextContent("Invalid request")
+
+
+def load(environ, start_response):
+	return Name(environ, start_response)
 
