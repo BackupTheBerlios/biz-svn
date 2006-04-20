@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+# server.py -- BizServer
 # Based on P. J. Eby's simple_server.py
 
 """BaseHTTPServer that implements the Python WSGI protocol (PEP 333, rev 1.21)

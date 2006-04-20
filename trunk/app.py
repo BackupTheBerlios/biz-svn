@@ -4,10 +4,11 @@ from biz.response import Response
 
 
 class Application:
-	def __init__(self, environ, start_response):
+	def __init__(self, environ, start_response, options=None):
 		self.rcode = 200
 		self.content = None
 		self.rheads = None
+		self.options = options or {}
 
 		self.refresh(environ, start_response)		
 		self.static()
