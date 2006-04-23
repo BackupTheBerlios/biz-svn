@@ -1,0 +1,32 @@
+# ${appfilename}.py -- ${classname} BizApplication
+
+from biz.app import Application
+from biz.content import *
+
+
+# Customize this class 
+class ${appclassname}(Application):
+	# you may access the `environ` as self.environ in instance methods.
+	# other instance variables that may be of use are:
+	#   self.content -- content of the response (type: Content)
+	#   self.rcode -- response code (type: int)
+	#   self.rhead -- response headers (type: dict)
+	#   self.response -- response (type: Response)
+	
+	def static(self):
+		# override this method for static content
+		#  don't forget to supply `self.content`
+		#  e.g., self.content = HtmlContent("<b>Hello, World!</b>")
+		# else, you may completely erase this method.
+		pass  # remove this if you are overriding.
+		
+	def run(self):
+		# put dynamic content here
+		#  don't forget to supply `self.content`
+		# if you are serving only static content, you may erase this method.
+		pass  # remove this if you are overriding.
+
+
+def load(environ, start_response):
+	# you may customize this function, but DO NOT REMOVE it.
+	return ${appclassname}(environ, start_response)
