@@ -8,6 +8,6 @@ class Hello(Application):
 		self.content = TextContent("Hello, World!")
 
 
-def load(environ, start_response, options):
-	return Hello(environ, start_response)
+def load(root):
+	return Hello(root)
 

@@ -1,30 +1,57 @@
 # app.py -- Biz application
 
-from biz.response import Response
+##from biz.response import Response
+from biz.component import Component
 
 
-class Application:
-	def __init__(self, environ, start_response, options=None):
+class Application(Component):
+	requires = ["biz.environ", "biz.startresponse",
+				"biz.env.path", "biz.env.params"]
+	accepts = ["biz.app.options"]
+	provides = ["biz.environ",   ## "biz.startresponse",
+				"biz.response.code", "biz.response.content",
+				"biz.response.heads"]
+
+	def __init__(self, resources=None):
+		Component.__init__(self)
+
+		if resources is None:
+			self.resources = []
+		elif isinstance(resources, list):
+			self.resources = resources
+		elif isinstance(resources, Component):
+			self.resources = [resources]
+		else:
+			assert False, "resources should be a Component or list of Components"
+
 		self.rcode = 200
 		self.content = None
-		self.rheads = None
-		self.options = options or {}
+		self.rheads = {}
 
-		self.refresh(environ, start_response)		
+		self.refresh()
 		self.static()
 
-	def refresh(self, environ, start_response):
+
+	def refresh(self):
 		"""prepare the application to run
 
 		* Extend this method, if you require custom preparation
 		"""
-		self.environ = environ
-		self.response = Response(start_response, content=None)
+		##self.environ = environ
+		##self.response = Response(start_response, content=None)
+		self.collect()
+		self.environ = self.properties["biz.environ"]  ## ?
+		self.path = self.properties["biz.env.path"]
+		self.params = self.properties["biz.env.params"]
+		self.options = self.properties.get("biz.app.options", {})
+		##self.response = Response()
+		##self.provideto(self.response)
+		##self.response.new()
 
 	def static(self):
 		"""prepare static content
 
-		* Override this method to prepare content that will be prepared once
+		* Override this method to prepare content that will not change
 		"""
 		pass
 
@@ -38,12 +65,31 @@ class Application:
 		"""
 		pass
 
-	def get_response(self):
-		r = self.response
-		r.content = self.content
-		r.rcode = self.rcode
-		if self.rheads:
-			r.heads = self.rheads
+	def prepare(self):
+		Component.prepare(self)
 
-		return r.get_response()
+		self.refresh()
+		self.run()
+
+		self.providing["biz.environ"] = self.properties["biz.environ"]
+		##self.providing["biz.startresponse"] = self.properties["biz.startresponse"]
+
+		self.providing["biz.response.content"] = self.content
+		self.rheads["content-length"] = self.content._clen
+		self.rheads["content-type"] = self.content.ctype
+		self.providing["biz.response.heads"] = self.rheads
+		self.providing["biz.response.code"] = self.rcode
+
+		assert self.providesall(), "This component cannot provide all"
+
+
+
+	##def get_response(self):
+	##    r = self.response
+	##    r.content = self.content
+	##    r.rcode = self.rcode
+	##    if self.rheads:
+	##        r.heads = self.rheads
+	##
+	##    return r.get_response()
 

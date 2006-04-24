@@ -71,11 +71,11 @@ RESPONSES = {
 
 
 class Response:
-	def __init__(self, start_response, code=200, content=EmptyContent()):
+	def __init__(self, start_response, code=200, content=EmptyContent(), heads=None):
+		self.start_response = start_response  ## !!!
 		self.rcode = code
 		self.content = content
-		self.heads = {}
-		self.start_response = start_response
+		self.heads = heads or {}
 		
 	def get_response(self):
 		self.heads["content-type"] = self.content.ctype

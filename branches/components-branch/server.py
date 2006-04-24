@@ -39,7 +39,7 @@ class ServerHandler(SimpleHandler):
 			SimpleHandler.close(self)
 
 
-class BizWSGIServer(HTTPServer):
+class WSGIServer(HTTPServer):
 	"""BaseHTTPServer that implements the Python WSGI protocol"""
 
 	application = None
@@ -66,7 +66,7 @@ class BizWSGIServer(HTTPServer):
 		self.application = application
 
 
-class BizWSGIRequestHandler(BaseHTTPRequestHandler):
+class WSGIRequestHandler(BaseHTTPRequestHandler):
 	server_version = "BizWSGIServer/" + __version__  ## ?
 
 	def get_environ(self):
@@ -138,7 +138,7 @@ def run(root):
 	address = (ops.address, int(ops.port))
 	count = int(ops.count)
 
-	httpd = BizWSGIServer(address, BizWSGIRequestHandler)
+	httpd = WSGIServer(address, WSGIRequestHandler)
 	httpd.set_app(root)
 	sa = httpd.socket.getsockname()
 
