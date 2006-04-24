@@ -19,7 +19,7 @@ class Favicon(Application):
 			self.content = EmptyContent()
 
 
-def load(environ, start_response, options):
-	return Favicon(environ, start_response, options)
+def load(root):
+	return Favicon(root)
 
 
