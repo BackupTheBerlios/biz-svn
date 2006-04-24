@@ -6,8 +6,15 @@ class Component:
 	accepts = []
 	provides = []
 
-	def __init__(self):
-		self.resources = []
+	def __init__(self, resources=None):
+		if resources is None:
+			self.resources = []
+		elif isinstance(resources, list):
+			self.resources = resources
+		elif isinstance(resources, Component):
+			self.resources = [resources]
+		else:
+			assert False, "resources should be a Component or list of Components"
 
 		self.requires = set(self.requires)
 		self.accepts = set(self.accepts)

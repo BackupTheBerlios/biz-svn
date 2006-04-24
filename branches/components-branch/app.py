@@ -15,15 +15,6 @@ class Application(Component):
 	def __init__(self, resources=None):
 		Component.__init__(self)
 
-		if resources is None:
-			self.resources = []
-		elif isinstance(resources, list):
-			self.resources = resources
-		elif isinstance(resources, Component):
-			self.resources = [resources]
-		else:
-			assert False, "resources should be a Component or list of Components"
-
 		self.rcode = 200
 		self.content = None
 		self.rheads = {}
