@@ -1,25 +1,30 @@
 # app.py -- Biz application
 
 from biz.response import Response
+from utility import Struct, Heads
+
+from content import TextContent
 
 
 class Application:
-	def __init__(self, environ, start_response, options=None):
-		self.rcode = 200
-		self.content = None
-		self.rheads = None
-		self.options = options or {}
+	def __init__(self, xenviron):
+		self.options = xenviron.options
+		self.content = TextContent("application default")
+		self.code = 200
+		self.heads = Heads()
 
-		self.refresh(environ, start_response)		
+		self.refresh(xenviron)
 		self.static()
 
-	def refresh(self, environ, start_response):
+	def refresh(self, xenviron):
 		"""prepare the application to run
 
 		* Extend this method, if you require custom preparation
 		"""
-		self.environ = environ
-		self.response = Response(start_response, content=None)
+		self.path = xenviron.path
+		self.params = xenviron.params
+		self.session = xenviron.session
+		self.cookies = xenviron.cookies
 
 	def static(self):
 		"""prepare static content
@@ -38,12 +43,9 @@ class Application:
 		"""
 		pass
 
-	def get_response(self):
-		r = self.response
-		r.content = self.content
-		r.rcode = self.rcode
-		if self.rheads:
-			r.heads = self.rheads
-
-		return r.get_response()
+	def get(self):
+		xenviron = Struct()  # FUTURE
+		xenviron.cookies = self.cookies
+		xenviron.session = self.session
+		return (xenviron,Response(self.code, self.content, **self.heads._getdict()))
 

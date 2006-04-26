@@ -6,10 +6,18 @@ import time
 import os
 import os.path
 from ConfigParser import ConfigParser, NoOptionError
+from Cookie import SimpleCookie
+
+from biz.utility import Struct
+from biz.content import TextContent
+from biz.response import Response
+from biz.session import SessionManager, SessionError
 
 
 class ApplicationInfo(object):
-	__slots__ = "name","mpath","cpath","body","mtime","ctime","usage","hotplug","options","class_"
+	__slots__ = ("name","mpath","cpath",
+				"body","mtime","ctime",
+				"usage","hotplug","class_")
 
 	def __init__(self, name, mpath=None, cpath=None, class_=None, body=None,
 			mtime=0, ctime=0, options=None, hotplug=False):
@@ -22,7 +30,7 @@ class ApplicationInfo(object):
 		self.ctime = ctime  # configuration modification time
 		self.usage = 0
 		self.hotplug = hotplug
-		self.options = options or {}
+		##self.options = options or {}
 
 	def _reload_options(self):
 		self.ctime = os.stat(self.cpath).st_mtime
@@ -43,22 +51,22 @@ class ApplicationInfo(object):
 		self.class_ = options.get("class", None)
 		self.mpath = options.get("path", "")
 
-		self.options = options
+		##self.options = options
+		return options
 
-	def _reload(self, environ, start_response):
-		self._reload_options()
+	def _reload(self, xenviron):
+		xenviron.options = self._reload_options()
 
 		if self.class_:
 			m = __import__(self.class_, None, None, ["load"])
-			self.body = m.load(environ, start_response, self.options)
+			self.body = m.load(xenviron)
 
 		else:
 			self.mtime = os.stat(self.mpath).st_mtime			
 			path, modname = os.path.split(self.mpath)
 			modname = modname.split(".py")[0]
 			self.body = imp.load_module(modname, \
-				*imp.find_module(modname, [path])).load(environ, \
-						start_response, self.options)
+				*imp.find_module(modname, [path])).load(xenviron)
 
 	def unload(self):
 		self.body = None
@@ -80,14 +88,14 @@ class ApplicationInfo(object):
 
 		return False
 
-	def __call__(self, environ, start_response):
+	def __call__(self, xenviron):
 		if not self.body or self._is_modified():
-			self._reload(environ, start_response)
+			self._reload(xenviron)
 
 		return self
 		
 
-class BizRoot:
+class Root:
 	def __init__(self):
 ##		self._apps = {}  # cached apps
 		self._applist = {}  # all apps
@@ -95,6 +103,7 @@ class BizRoot:
 		self._error = None
 		self.environ = None
 		self.start_response = None
+		self.sessionman = SessionManager()
 
 	def register_app(self, name, cpath):
 		if name not in self._applist:
@@ -107,25 +116,12 @@ class BizRoot:
 		self._error = ApplicationInfo(name, cpath=cpath)
 
 	def _default_index(self):
-		try:
-			try:
-				f = file("doc/welcome.html")
-				page = f.read()
-			finally:
-				f.close()
-
-		except IOError:
-			page = "Index method is left out."
-
-		self.start_response("200 Index", [("content-type","text/html")])
-		return page
-
-	def _default_error(self):
-		code = self.environ["biz.error.code"]
-		msg = self.environ["biz.error.message"]
-
-		self.start_response("%s error" % code, [("content-type","text/plain")])
-		return msg
+		page = TextContent("Index method is left out.")
+		return self._prepare_response(Response(200, page))
+		
+	def _default_error(self, code, message):
+		page = TextContent(message)
+		return self._prepare_response(Response(code, page))
 
 	def __call__(self, environ, start_response):
 		def tuplize(x):
@@ -143,33 +139,61 @@ class BizRoot:
 		else:
 			params = {}
 
-		environ["biz.path"] = path
-		environ["biz.params"] = params
+
+		xenviron = Struct()
+		xenviron.path = path
+		xenviron.params = params
+		xenviron.cookies = SimpleCookie(environ.get("HTTP_COOKIE", ""))
+		try:
+			xenviron.cookies, xenviron.session = self.sessionman.get_session(xenviron.cookies)
+		except SessionError:
+			xenviron.session = self.sessionman.new_session()
+
 
 		if not path[0]:
 			if not self._index:
 				return self._default_index()
 
-			app = self._index(environ, start_response)
+			app = self._index(xenviron)
 		else:
 			try:
 				name = path[0]
-				app = self._applist[name](environ, start_response)
+				app = self._applist[name](xenviron)
 			except KeyError:
-				environ["biz.error.code"] = "404"
-				environ["biz.error.message"] = "Method not found."
+				##environ["biz.error.code"] = "404"
+				##environ["biz.error.message"] = "Method not found."
+				xenviron.error_code = 404
+				xenviron.error_message = "Method not found"
 
 				if self._error:
-					app = self._error(environ, start_response)
+					app = self._error(xenviron)
 				else:
-					return self._default_error()					
+					return self._default_error(xenviron.error_code, 
+							xenviron.error_message)
 
-		app.usage += 1
-		environ["biz.debug.app.usage"] = str(app.usage)
-
-		app.body.refresh(environ, start_response)
+		app.body.refresh(xenviron)
 		app.body.run()
-		return app.body.get_response()
+		app_xenviron, response = app.body.get()
+		# further process the app_xenviron
+		self.sessionman.update(app_xenviron.session)
+		# return preparations
+		cookies = SimpleCookie()
+		cookies.update(app_xenviron.cookies)
+		cookies.update(app_xenviron.session.sidcookie)
+		##try:  # XXX
+		cookies = str(cookies).split()[1]
+		##except IndexError:
+			##cookies = "sid=0"
+		##response.heads.set_cookie = str(cookies)
+		print cookies
+		response.heads.set_cookie = cookies
+		return self._prepare_response(response)
+
+	def _prepare_response(self, response):
+		rc, rh, ct = response.get_forwsgi()
+		self.start_response(rc, rh)
+
+		return ct
 
 	known_options = ["path", "hotplug", "class"]
 

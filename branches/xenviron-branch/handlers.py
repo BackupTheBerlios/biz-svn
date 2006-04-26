@@ -1,7 +1,7 @@
 """Base classes for server/gateway implementations"""
 
 from types import StringType
-from util import FileWrapper, guess_scheme, is_hop_by_hop
+from wsgiutil import FileWrapper, guess_scheme, is_hop_by_hop
 from headers import Headers
 
 import sys, os, time

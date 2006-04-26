@@ -1,6 +1,7 @@
 # response.py
 
 from content import EmptyContent
+from utility import Struct, Heads
 
 
 RESPONSES = {
@@ -70,28 +71,23 @@ RESPONSES = {
         }
 
 
+def wsgi_response(start_response, response):
+	code, heads, content = response.get_forwsgi()
+	start_response(code, heads)
+	return content
+
+
 class Response:
-	def __init__(self, start_response, code=200, content=EmptyContent()):
-		self.rcode = code
+	def __init__(self, code=200, content=EmptyContent(), **kwargs):
+		self.code = code
 		self.content = content
-		self.heads = {}
-		self.start_response = start_response
-		
-	def get_response(self):
-		self.heads["content-type"] = self.content.ctype
-		self.heads["content-length"] = str(self.content._clen)
+		self.heads = Heads(**kwargs)
+		self.heads.content_type = self.content.ctype
+		self.heads.content_length = self.content._clen
 
-		self._other_headers()
+	def get_forwsgi(self):
+		return ("%d %s" % (self.code,RESPONSES.get(self.code, ["Unknown"])[0]), \
+				self.heads._getlist(),self.content.get())
 
-		self.start_response("%d %s" % \
-				(self.rcode,RESPONSES.get(self.rcode, ["Unknown"])[0]),
-				[x for x in self.heads.iteritems()])		
-		##return self.content.get_filedescriptor()
-		return self.content.get_content()
-		
-	def _other_headers(self):  # TODO: Change name of this
-		"""send other headers.
-		
-		Override this to add custom headers.
-		"""
-		pass
+
+
