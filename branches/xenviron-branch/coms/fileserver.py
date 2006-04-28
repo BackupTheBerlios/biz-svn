@@ -12,7 +12,7 @@ class FileServer:
 		self.mime_handlers = {}
 
 		assert self.location, \
-				"virtualfolder.location should be set"
+				"location should be set"
 
 		if not self.location.endswith("/"):
 			self.location += "/"

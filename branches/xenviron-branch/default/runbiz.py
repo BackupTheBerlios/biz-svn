@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # runbiz.py
 
 import biz.server

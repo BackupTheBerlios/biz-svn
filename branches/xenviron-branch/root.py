@@ -7,6 +7,7 @@ import os
 import os.path
 from ConfigParser import ConfigParser, NoOptionError
 from Cookie import SimpleCookie
+import urllib
 
 from biz.utility import Struct
 from biz.content import TextContent
@@ -133,17 +134,20 @@ class Root:
 		self.environ = environ
 		self.start_response = start_response
 
-		path = [p for p in environ["PATH_INFO"].split("/") if p] or [""]
+		path_info = urllib.unquote_plus(environ["PATH_INFO"])
+
+		path = [p for p in path_info.split("/") if p] or [""]
 		if "QUERY_STRING" in environ:
-			params = dict([tuplize(x) for x in environ["QUERY_STRING"].split("&") if x])
+			query_string = urllib.unquote_plus(environ["QUERY_STRING"])
+			params = dict([tuplize(x) for x in query_string.split("&") if x])
 		else:
 			params = {}
-
 
 		xenviron = Struct()
 		xenviron.args = path
 		xenviron.kwargs = params
 		xenviron.cookies = SimpleCookie(environ.get("HTTP_COOKIE", ""))
+
 		try:
 			xenviron.cookies, xenviron.session = self.sessionman.get_session(xenviron.cookies)
 		except SessionError:

@@ -11,8 +11,7 @@ class SumApp(Application):
 		template = Template(self.options.get("sum.template",
 				'The sum is: <b>$sum</b>'))
 
-		page = template.substitute(sum=sum([float(p)
-					for p in self.path[1:]]))
+		page = template.substitute(sum=sum([float(p) for p in self.args[1:]]))
 
 		self.content = HtmlContent(page)
 
