@@ -1,4 +1,5 @@
 # root.py -- Root application
+# Routes the applications
 
 
 import imp
