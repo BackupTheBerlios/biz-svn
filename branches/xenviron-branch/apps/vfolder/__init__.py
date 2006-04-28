@@ -26,17 +26,17 @@ class VirtualFolder(Application):
 		self.mime_handlers = {}
 		
 	def run(self):
-		path_items = self.environ["biz.path"]
+		path_items = self.args
 
-		if not path_items:  # registered as index handler or error on /
-			path = ""
-			self.name = ""
-		elif not self.environ.has_key("biz.error.code"):  # normal condition
-			path = "/".join(path_items[1:])
-			self.name = path_items[0]
-		else:  # registered as error handler
-			path = "/".join(path_items)
-			self.name = ""
+		##if not path_items:  # registered as index handler or error on /
+		##    path = ""
+		##    self.name = ""
+		##elif not self.environ.has_key("biz.error.code"):  # normal condition
+		path = "/".join(path_items[1:])
+		self.name = path_items[0]
+		##else:  # registered as error handler
+		##    path = "/".join(path_items)
+		##    self.name = ""
 
 		newpath = os.path.join(self.location, path)
 
@@ -47,7 +47,7 @@ class VirtualFolder(Application):
 			try:
 				thelist = glob.glob(os.path.join(newpath, self.wildcard))
 			except OSError:
-				self.rcode = 404
+				self.code = 404
 				self.content = HtmlContent('<p style="color: red">Directory not found</p>')
 				return
 	
@@ -68,10 +68,10 @@ class VirtualFolder(Application):
 			self.content = HtmlContent(page)
 
 		elif not os.path.exists(newpath):
-			self.rcode = 404
+			self.code = 404
 			self.content = TextContent("File not found")
 		else:
-			self.rcode = 500
+			self.code = 500
 			self.content = TextContent("error")
 
 	def __fformat(self, path, name, isdir):
@@ -120,8 +120,8 @@ def zip_handler(fname):
 						
 	return HtmlContent(page)
 
-def load(environ, start_response, options):
-	vfolder = VirtualFolder(environ, start_response, options)
+def load(xenviron):
+	vfolder = VirtualFolder(xenviron)
 	vfolder.add_handler("text/x-python", python_handler)
 	vfolder.add_handler("application/zip", zip_handler)
 	

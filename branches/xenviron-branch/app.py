@@ -3,15 +3,13 @@
 from biz.response import Response
 from utility import Struct, Heads
 
-from content import TextContent
+from content import TextContent, EmptyContent
 
 
 class Application:
 	def __init__(self, xenviron):
 		self.options = xenviron.options
 		self.content = TextContent("application default")
-		self.code = 200
-		self.heads = Heads()
 
 		self.refresh(xenviron)
 		self.static()
@@ -21,10 +19,13 @@ class Application:
 
 		* Extend this method, if you require custom preparation
 		"""
-		self.path = xenviron.path
-		self.params = xenviron.params
+		self.args = xenviron.args
+		self.kwargs = xenviron.kwargs
 		self.session = xenviron.session
 		self.cookies = xenviron.cookies
+
+		self.code = 200
+		self.heads = Heads()
 
 	def static(self):
 		"""prepare static content
@@ -48,4 +49,9 @@ class Application:
 		xenviron.cookies = self.cookies
 		xenviron.session = self.session
 		return (xenviron,Response(self.code, self.content, **self.heads._getdict()))
+
+	def redirect(self, location):
+		self.code = 307
+		self.heads.location = location
+		self.content = EmptyContent()
 

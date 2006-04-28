@@ -82,7 +82,7 @@ class ApplicationInfo(object):
 		if self.class_:
 			return False
 
-		mtime = os.stat(self.mpath).st_time
+		mtime = os.stat(self.mpath).st_mtime
 		if mtime > self.mtime:
 			return True
 
@@ -141,8 +141,8 @@ class Root:
 
 
 		xenviron = Struct()
-		xenviron.path = path
-		xenviron.params = params
+		xenviron.args = path
+		xenviron.kwargs = params
 		xenviron.cookies = SimpleCookie(environ.get("HTTP_COOKIE", ""))
 		try:
 			xenviron.cookies, xenviron.session = self.sessionman.get_session(xenviron.cookies)
@@ -185,7 +185,6 @@ class Root:
 		##except IndexError:
 			##cookies = "sid=0"
 		##response.heads.set_cookie = str(cookies)
-		print cookies
 		response.heads.set_cookie = cookies
 		return self._prepare_response(response)
 
