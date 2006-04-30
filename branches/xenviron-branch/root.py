@@ -14,6 +14,8 @@ from biz.content import TextContent
 from biz.response import Response
 from biz.session import SessionManager, SessionError
 
+__all__ = ["Root"]
+
 
 class ApplicationInfo(object):
 	__slots__ = ("name","mpath","cpath",

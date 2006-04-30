@@ -1,22 +1,11 @@
-"""wsgiref -- a WSGI (PEP 333) Reference Library
+# biz
 
-Current Contents:
+from biz.root import Root
+from biz.app import Application, SecureApplication
+from biz.content import EmptyContent, TextContent, HtmlContent, \
+		FileContent, CachedFileContent
 
-	* util -- Miscellaneous useful functions and wrappers
+__all__ = ["Root", "Application", "SecureApplication",
+			"EmptyContent", "TextContent", "HtmlContent",
+			"FileContent", "CachedFileContent"]
 
-	* headers -- Manage response headers
-
-	* handlers -- base classes for server/gateway implementations
-
-	* simple_server -- a simple BaseHTTPServer that supports WSGI
-    
-To-Do:
-
-	* validate -- validation library and "lint"-like functions
-
-	* cgi_gateway -- Run WSGI apps under CGI
-
-	* cgi_wrapper -- Run CGI apps under WSGI
-
-	* router -- a simple middleware component that handles URL traversal
-"""

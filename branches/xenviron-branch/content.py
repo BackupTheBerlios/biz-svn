@@ -3,6 +3,10 @@
 import os
 from cStringIO import StringIO
 
+__all__ = ["EmptyContent", "TextContent", "HtmlContent", 
+			"FileContent", "CachedFileContent"]
+
+
 class Content(object):
 	__slots__ = "ctype","_clen"
 	

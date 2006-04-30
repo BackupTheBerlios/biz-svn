@@ -1,7 +1,7 @@
 # response.py
 
-from content import EmptyContent
-from utility import Struct, Heads
+from biz.content import EmptyContent
+from biz.utility import Struct, Heads
 
 
 RESPONSES = {

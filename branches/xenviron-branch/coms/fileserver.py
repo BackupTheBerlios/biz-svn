@@ -50,6 +50,6 @@ class FileServer:
 		self.mime_handlers[mime_type] = function
 
 	def get(self):
-		return (self.code,self.response)
+		return (self.code,self.content)
 
 
