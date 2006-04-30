@@ -24,13 +24,12 @@ def admin_create(options, args):
 			prefix = options.prefix
 		else:
 			if platform.startswith("linux"):
-				prefix = os.path.join(sys.prefix, 
-						"/".join(["lib", python_ver, "site-packages", "biz"]))
+				prefix = os.path.join(sys.prefix, "lib", python_ver, "site-packages", "biz")
 			else:
 				print "%s is not supported." % platform
 				return True
 
-		source = prefix + "/default"
+		source = os.path.join(prefix, "default")
 		shutil.copytree(source, destination)
 
 		return True
