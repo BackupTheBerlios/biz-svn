@@ -8,6 +8,7 @@ import os.path
 from ConfigParser import ConfigParser, NoOptionError
 from Cookie import SimpleCookie
 import urllib
+from cgi import FieldStorage
 
 from biz.utility import Struct
 from biz.content import TextContent
@@ -144,9 +145,14 @@ class Root:
 		else:
 			params = {}
 
+		# a dirty little trick to deny FieldStorage to use QUERY_STRING
+		self.environ["QUERY_STRING"] = ""
+
 		xenviron = Struct()
 		xenviron.args = path
 		xenviron.kwargs = params
+		xenviron.fields = FieldStorage(environ=self.environ,
+				fp=self.environ["wsgi.input"])
 		xenviron.cookies = SimpleCookie(environ.get("HTTP_COOKIE", ""))
 
 		try:

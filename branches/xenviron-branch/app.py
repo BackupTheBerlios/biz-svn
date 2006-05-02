@@ -25,6 +25,7 @@ class Application:
 		self.kwargs = xenviron.kwargs
 		self.session = xenviron.session
 		self.cookies = xenviron.cookies
+		self.fields = xenviron.fields
 
 		self.code = 200
 		self.heads = Heads()
