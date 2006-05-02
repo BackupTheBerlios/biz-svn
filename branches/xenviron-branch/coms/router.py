@@ -13,7 +13,6 @@ class Router:
 			m = self.handlers[name]
 			m.run(args)
 			return m.get()
-			return True
 		else:
 			return None
 

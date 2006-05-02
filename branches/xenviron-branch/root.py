@@ -20,14 +20,14 @@ __all__ = ["Root"]
 class ApplicationInfo(object):
 	__slots__ = ("name","mpath","cpath",
 				"body","mtime","ctime",
-				"usage","hotplug","class_")
+				"usage","hotplug","module")
 
-	def __init__(self, name, mpath=None, cpath=None, class_=None, body=None,
+	def __init__(self, name, mpath=None, cpath=None, module=None, body=None,
 			mtime=0, ctime=0, options=None, hotplug=False):
 		self.name = name
 		self.mpath = mpath
 		self.cpath = cpath
-		self.class_ = class_
+		self.module = module
 		self.body = body
 		self.mtime = mtime  # module modification time
 		self.ctime = ctime  # configuration modification time
@@ -47,11 +47,11 @@ class ApplicationInfo(object):
 
 		options = dict(cfg.items(sections[0]))
 
-		assert options.has_key("class") ^ options.has_key("path"), \
+		assert options.has_key("module") ^ options.has_key("path"), \
 			"class OR path should be in options"
 
 		self.hotplug = options.get("hotplug", False)
-		self.class_ = options.get("class", None)
+		self.module = options.get("module", None)
 		self.mpath = options.get("path", "")
 
 		##self.options = options
@@ -60,8 +60,8 @@ class ApplicationInfo(object):
 	def _reload(self, xenviron):
 		xenviron.options = self._reload_options()
 
-		if self.class_:
-			m = __import__(self.class_, None, None, ["load"])
+		if self.module:
+			m = __import__(self.module, None, None, ["load"])
 			self.body = m.load(xenviron)
 
 		else:
@@ -82,7 +82,7 @@ class ApplicationInfo(object):
 		if ctime > self.ctime:
 			return True
 
-		if self.class_:
+		if self.module:
 			return False
 
 		mtime = os.stat(self.mpath).st_mtime
@@ -100,7 +100,6 @@ class ApplicationInfo(object):
 
 class Root:
 	def __init__(self):
-##		self._apps = {}  # cached apps
 		self._applist = {}  # all apps
 		self._index = None  # index app
 		self._error = None
@@ -202,7 +201,9 @@ class Root:
 
 	known_options = ["path", "hotplug", "class"]
 
-	def configure(self, cfgfilename, update=False):
+	@staticmethod
+	def configure(cfgfilename, update=False):
+		root = Root()
 		cfg = ConfigParser()
 		cfg.read(cfgfilename)
 
@@ -212,20 +213,31 @@ class Root:
 			"Root configuration file should have `applications` section"
 
 		for app, cpath in cfg.items(apps):
-			if not app in self._applist:
-				self.register_app(app, cpath)
+			if not app in root._applist:
+				root.register_app(app, cpath)
 
 		index = "index"
 		if cfg.has_section(index):
 			app,cpath = cfg.items(index)[0]
-			self.register_index(app, cpath)
+			root.register_index(app, cpath)
 
 		error = "error"
 		if cfg.has_section(error):
 			app,cpath = cfg.items(error)[0]
-			self.register_error(app, cpath)
+			root.register_error(app, cpath)
 
+		try:
+			timeout = cfg.getint("root", "timeout")
+		except:
+			timeout = 0
 
+		root.sessionman.timeout = timeout
 
+		try:
+			expiretime = cfg.getint("root", "expiretime")
+		except:
+			expiretime = 0
 
+		root.sessionman.expiretime = expiretime
 
+		return root
