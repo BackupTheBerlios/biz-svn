@@ -1,13 +1,12 @@
 
-from biz.app import Application
-from biz.content import TextContent
+import biz
 
 
-class Hello(Application):
+class Hello(biz.Application):
 	def static(self):
-		self.content = TextContent("Hello, World!")
+		self.content = biz.TextContent("Hello, World!")
 
 
-def load(environ, start_response, options):
-	return Hello(environ, start_response)
+def load(xenviron):
+	return Hello(xenviron)
 

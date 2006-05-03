@@ -3,6 +3,10 @@
 import os
 from cStringIO import StringIO
 
+__all__ = ["EmptyContent", "TextContent", "HtmlContent", 
+			"FileContent", "CachedFileContent"]
+
+
 class Content(object):
 	__slots__ = "ctype","_clen"
 	
@@ -10,7 +14,7 @@ class Content(object):
 		self.ctype = ctype
 		self._clen = 0
 		
-	def get_content(self):
+	def get(self):
 		"""return the content.
 		
 		* Override this.
@@ -26,7 +30,7 @@ class TextContent(Content):
 		self.content = str(content)
 		self._clen = len(self.content)
 		
-	def get_content(self):
+	def get(self):
 		return [self.content]
 
 
@@ -49,7 +53,7 @@ class FileContent(Content):
 		self._descriptor = file(filename, "rb")
 		self._clen = os.stat(filename).st_size
 		
-	def get_content(self):
+	def get(self):
 		return self._descriptor
 
 
@@ -63,7 +67,7 @@ class CachedFileContent(Content):
 		self.content = f.read()
 		self._clen = len(self.content)
 
-	def get_content(self):
+	def get(self):
 		return [self.content]
 
 
