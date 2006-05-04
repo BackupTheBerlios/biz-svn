@@ -1,6 +1,23 @@
 # root.py -- Root application
 # Routes the applications
 
+# Biz web application framework
+# Copyright (C) 2006  Yuce Tekol
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
 
 import imp
 import time
@@ -35,7 +52,6 @@ class ApplicationInfo(object):
 		self.ctime = ctime  # configuration modification time
 		self.usage = 0
 		self.hotplug = hotplug
-		##self.options = options or {}
 
 	def _reload_options(self):
 		self.ctime = os.stat(self.cpath).st_mtime
@@ -56,7 +72,6 @@ class ApplicationInfo(object):
 		self.module = options.get("module", None)
 		self.mpath = options.get("path", "")
 
-		##self.options = options
 		return options
 
 	def _reload(self, xenviron):
@@ -172,8 +187,6 @@ class Root:
 				name = path[0]
 				app = self._applist[name](xenviron)
 			except KeyError:
-				##environ["biz.error.code"] = "404"
-				##environ["biz.error.message"] = "Method not found."
 				xenviron.error_code = 404
 				xenviron.error_message = "Method not found"
 
@@ -192,11 +205,7 @@ class Root:
 		cookies = SimpleCookie()
 		cookies.update(app_xenviron.cookies)
 		cookies.update(app_xenviron.session.sidcookie)
-		##try:  # XXX
 		cookies = str(cookies).split()[1]
-		##except IndexError:
-			##cookies = "sid=0"
-		##response.heads.set_cookie = str(cookies)
 		response.heads.set_cookie = cookies
 		return self._prepare_response(response)
 
