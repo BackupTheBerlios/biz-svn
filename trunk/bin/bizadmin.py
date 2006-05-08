@@ -26,6 +26,8 @@ def admin_create(options, args):
 		else:
 			if platform.startswith("linux"):
 				prefix = os.path.join(sys.prefix, "lib", python_ver, "site-packages", "biz")
+			elif platform == "win32":
+				prefix = os.path.join(sys.prefix, "Lib", "site-packages", "biz")
 			else:
 				print "%s is not supported." % platform
 				return True
