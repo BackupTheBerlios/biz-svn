@@ -39,7 +39,7 @@ __all__ = ["Root"]
 class ApplicationInfo(object):
 	__slots__ = ("name","mpath","cpath",
 				"body","mtime","ctime",
-				"usage","hotplug","module")
+				"usage","hotplug","module", "class_")
 
 	def __init__(self, name, mpath=None, cpath=None, module=None, body=None,
 			mtime=0, ctime=0, options=None, hotplug=False):
@@ -52,6 +52,7 @@ class ApplicationInfo(object):
 		self.ctime = ctime  # configuration modification time
 		self.usage = 0
 		self.hotplug = hotplug
+		self.class_ = None  # Warning! this is not in the parameter list ^
 
 	def _reload_options(self):
 		self.ctime = os.stat(self.cpath).st_mtime
@@ -71,6 +72,7 @@ class ApplicationInfo(object):
 		self.hotplug = options.get("hotplug", False)
 		self.module = options.get("module", None)
 		self.mpath = options.get("path", "")
+		self.class_ = options.get("class", "")
 
 		return options
 
@@ -78,15 +80,23 @@ class ApplicationInfo(object):
 		xenviron.options = self._reload_options()
 
 		if self.module:
-			m = __import__(self.module, None, None, ["load"])
+			if self.class_:
+				m = __import__(self.module, None, None, [self.class_])
+			else:
+				m = __import__(self.module, None, None, ["load"])
 			self.body = m.load(xenviron)
 
 		else:
 			self.mtime = os.stat(self.mpath).st_mtime			
 			path, modname = os.path.split(self.mpath)
 			modname = modname.split(".py")[0]
-			self.body = imp.load_module(modname, \
-				*imp.find_module(modname, [path])).load(xenviron)
+			if self.class_:
+				m = imp.load_module(modname, \
+						*imp.find_module(modname, [path]))
+				self.body = m.__getattribute__(self.class_)(xenviron)
+			else:
+				self.body = imp.load_module(modname, \
+					*imp.find_module(modname, [path])).load(xenviron)
 
 	def unload(self):
 		self.body = None

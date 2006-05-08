@@ -1,0 +1,14 @@
+
+CHANGES
+=======
+
+Package
+-------
+
+* 2006-05-08 (ytekol) CHANGES file added.
+
+Root
+-----
+* 2006-05-08 (ytekol) application load mechanism extended, now class can be specified
+			in application's configuration file.
+
