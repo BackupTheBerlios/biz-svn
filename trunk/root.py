@@ -28,12 +28,17 @@ from Cookie import SimpleCookie
 import urllib
 from cgi import FieldStorage
 
+from biz.app import Application
 from biz.utility import Struct
 from biz.content import TextContent
 from biz.response import Response
 from biz.session import SessionManager, SessionError
 
 __all__ = ["Root"]
+
+
+class NoApplication(Exception):
+	pass
 
 
 class ApplicationInfo(object):
@@ -90,13 +95,21 @@ class ApplicationInfo(object):
 			self.mtime = os.stat(self.mpath).st_mtime			
 			path, modname = os.path.split(self.mpath)
 			modname = modname.split(".py")[0]
+			m = imp.load_module(modname, \
+					*imp.find_module(modname, [path]))
+
 			if self.class_:
-				m = imp.load_module(modname, \
-						*imp.find_module(modname, [path]))
 				self.body = m.__getattribute__(self.class_)(xenviron)
 			else:
-				self.body = imp.load_module(modname, \
-					*imp.find_module(modname, [path])).load(xenviron)
+				try:
+					self.body = m.load(xenviron)
+				except AttributeError:
+					for v in m.__dict__.itervalues():
+						if issubclass(v, Application):
+							self.body = v(xenviron)
+							break
+					else:
+						raise NoApplication("%s does not contain a Biz application" % path)
 
 	def unload(self):
 		self.body = None
