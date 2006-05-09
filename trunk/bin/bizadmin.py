@@ -65,7 +65,12 @@ def admin_create(options, args):
 
 def main():
 	router = dict(create=admin_create)
-	opt = OptionParser(usage="%prog [options] command [project_name]",
+	usage = """%prog [options] command [project_name]
+commands:
+  create      creates a new project
+	"""
+
+	opt = OptionParser(usage=usage,
 			version=__version__)
 	opt.add_option("-p", "--prefix", dest="prefix", default=None,
 			help="Change source prefix")

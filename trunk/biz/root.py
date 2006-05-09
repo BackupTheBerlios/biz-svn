@@ -36,9 +36,32 @@ from biz.session import SessionManager, SessionError
 
 __all__ = ["Root"]
 
+def _(s):  # TODO: Replace this with a true i18n function
+	return s
 
-class NoApplication(Exception):
+
+class RootError(Exception):
 	pass
+
+class NoApplicationExistsError(RootError):
+	def __init__(self, where, msg=None):
+		RootError.__init__(self)
+		self.where = where
+		self.msg = msg or _("The given path/module ``%s`` does not contain an application" % where)
+
+
+class ImproperConfigFileError(RootError):
+	def __init__(self, which, msg=None):
+		RootError.__init__(self)
+		self.which = which
+		self.msg = msg or _("The given file ``%s`` is not a valid configuration file" % which)
+
+
+class WSGIKeyNotPresentError(RootError):
+	def __init__(self, what, msg=None):
+		RootError.__init__(self)
+		self.what = what
+		self.msg = msg or _("WSGI key ``%s`` not present in environ" % what)
 
 
 class ApplicationInfo(object):
@@ -66,13 +89,15 @@ class ApplicationInfo(object):
 
 		sections = cfg.sections()
 
-		assert len(sections) > 0, \
-				"%s should have at least one section" % self.path
+		if len(sections) < 1:
+			raise ImproperConfigFileError(self.cpath,
+					_("%s should have at least one section"))
 
 		options = dict(cfg.items(sections[0]))
 
-		assert options.has_key("module") ^ options.has_key("path"), \
-			"class OR path should be in options"
+		if not(options.has_key("module") ^ options.has_key("path")):
+			raise ImproperConfigFileError(self.cpath,
+					_("%s should have a ``module`` or ``path`` option, but not both" % self.cpath))
 
 		self.hotplug = options.get("hotplug", False)
 		self.module = options.get("module", None)
@@ -109,7 +134,7 @@ class ApplicationInfo(object):
 							self.body = v(xenviron)
 							break
 					else:
-						raise NoApplication("%s does not contain a Biz application" % path)
+						raise NoApplicationExistsError(path)
 
 	def unload(self):
 		self.body = None
@@ -158,7 +183,7 @@ class Root:
 		self._error = ApplicationInfo(name, cpath=cpath)
 
 	def _default_index(self):
-		page = TextContent("Index method is left out.")
+		page = TextContent(_("Index method is left out."))
 		return self._prepare_response(Response(200, page))
 		
 	def _default_error(self, code, message):
@@ -175,7 +200,10 @@ class Root:
 		self.environ = environ
 		self.start_response = start_response
 
-		path_info = urllib.unquote_plus(environ["PATH_INFO"])
+		try:	
+			path_info = urllib.unquote_plus(environ["PATH_INFO"])
+		except KeyError:
+			raise WSGIKeyNotPresentError("PATH_INFO")
 
 		path = [p for p in path_info.split("/") if p] or [""]
 		if "QUERY_STRING" in environ:
@@ -190,15 +218,17 @@ class Root:
 		xenviron = Struct()
 		xenviron.args = path
 		xenviron.kwargs = params
-		xenviron.fields = FieldStorage(environ=self.environ,
-				fp=self.environ["wsgi.input"])
+		try:
+			xenviron.fields = FieldStorage(environ=self.environ,
+					fp=self.environ["wsgi.input"])
+		except KeyError:
+			raise WSGIKeyNotPresentError("wsgi.input")
 		xenviron.cookies = SimpleCookie(environ.get("HTTP_COOKIE", ""))
 
 		try:
 			xenviron.cookies, xenviron.session = self.sessionman.get_session(xenviron.cookies)
 		except SessionError:
 			xenviron.session = self.sessionman.new_session()
-
 
 		if not path[0]:
 			if not self._index:
@@ -211,7 +241,7 @@ class Root:
 				app = self._applist[name](xenviron)
 			except KeyError:
 				xenviron.error_code = 404
-				xenviron.error_message = "Method not found"
+				xenviron.error_message = _("Method not found")
 
 				if self._error:
 					app = self._error(xenviron)
@@ -238,7 +268,7 @@ class Root:
 
 		return ct
 
-	known_options = ["path", "hotplug", "class"]
+##	known_options = ["path", "hotplug", "class"]
 
 	@staticmethod
 	def configure(cfgfilename, update=False):
@@ -248,8 +278,8 @@ class Root:
 
 		apps = "applications"
 
-		assert cfg.has_section(apps), \
-			"Root configuration file should have `applications` section"
+		##assert cfg.has_section(apps), \
+		##    "Root configuration file should have `applications` section"
 
 		for app, cpath in cfg.items(apps):
 			if not app in root._applist:

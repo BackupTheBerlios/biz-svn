@@ -1,7 +1,6 @@
 # ${appfilename}.py -- ${classname} BizApplication
 
-from biz.app import Application
-from biz.content import *
+from biz import *
 
 
 # Customize this class 
@@ -12,6 +11,8 @@ class ${appclassname}(Application):
 	#   self.rcode -- response code (type: int)
 	#   self.rhead -- response headers (type: dict)
 	#   self.response -- response (type: Response)
+	# 	self.args -- arguments (type: list of strings)
+	#	self.kwargs -- arguments (type: dict of string:string s)
 	
 	def static(self):
 		# override this method for static content
@@ -26,7 +27,3 @@ class ${appclassname}(Application):
 		# if you are serving only static content, you may erase this method.
 		pass  # remove this if you are overriding.
 
-
-def load(environ, start_response):
-	# you may customize this function, but DO NOT REMOVE it.
-	return ${appclassname}(environ, start_response)
