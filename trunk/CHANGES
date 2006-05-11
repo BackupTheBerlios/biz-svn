@@ -5,7 +5,10 @@ CHANGES
 Package
 -------
 
-* 2006-05-08 (ytekol) CHANGES file added.
+* 2006-05-10 (ytekol) Setup via distutils.
+* 2006-05-10 (ytekol) Package layout changed.
+* 2006-05-09 (ytekol) README added.
+* 2006-05-08 (ytekol) CHANGES added.
 
 Root
 -----

@@ -1,0 +1,7 @@
+
+include gpl.txt
+include CHANGES
+recursive-include doc *
+recursive-include templates *.tmpl
+recursive-include bin *
+
