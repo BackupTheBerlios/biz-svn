@@ -82,7 +82,7 @@ class SessionManager:
 			if session.sid:
 				self.sessions[session.sid] = session
 			else:  # revoke
-				del self.session[session.sid]
+				del self.sessions[session.sid]
 		except KeyError:
 			print "session update error"  # TODO: Do some logging here
 

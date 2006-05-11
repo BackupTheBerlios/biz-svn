@@ -23,7 +23,7 @@ import imp
 import time
 import os
 import os.path
-from ConfigParser import ConfigParser, NoOptionError
+from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 from Cookie import SimpleCookie
 import urllib
 from cgi import FieldStorage
@@ -33,35 +33,12 @@ from biz.utility import Struct
 from biz.content import TextContent
 from biz.response import Response
 from biz.session import SessionManager, SessionError
+from biz.errors import *
 
 __all__ = ["Root"]
 
 def _(s):  # TODO: Replace this with a true i18n function
 	return s
-
-
-class RootError(Exception):
-	pass
-
-class NoApplicationExistsError(RootError):
-	def __init__(self, where, msg=None):
-		RootError.__init__(self)
-		self.where = where
-		self.msg = msg or _("The given path/module ``%s`` does not contain an application" % where)
-
-
-class ImproperConfigFileError(RootError):
-	def __init__(self, which, msg=None):
-		RootError.__init__(self)
-		self.which = which
-		self.msg = msg or _("The given file ``%s`` is not a valid configuration file" % which)
-
-
-class WSGIKeyNotPresentError(RootError):
-	def __init__(self, what, msg=None):
-		RootError.__init__(self)
-		self.what = what
-		self.msg = msg or _("WSGI key ``%s`` not present in environ" % what)
 
 
 class ApplicationInfo(object):
@@ -83,15 +60,18 @@ class ApplicationInfo(object):
 		self.class_ = None  # Warning! this is not in the parameter list ^
 
 	def _reload_options(self):
-		self.ctime = os.stat(self.cpath).st_mtime
-		cfg = ConfigParser()
-		cfg.read(self.cpath)
+		try:
+			self.ctime = os.stat(self.cpath).st_mtime
+			cfg = ConfigParser()
+			cfg.read(self.cpath)
+		except OSError:
+			raise ConfigFileNotFoundError(self.cpath, source="default config")
 
 		sections = cfg.sections()
 
 		if len(sections) < 1:
 			raise ImproperConfigFileError(self.cpath,
-					_("%s should have at least one section"))
+					_("%s should have at least one section" % self.cpath))
 
 		options = dict(cfg.items(sections[0]))
 
@@ -111,13 +91,23 @@ class ApplicationInfo(object):
 
 		if self.module:
 			if self.class_:
-				m = __import__(self.module, None, None, [self.class_])
+				try:
+					m = __import__(self.module, None, None, [self.class_])
+					self.body = m.__getattribute__(self.class_)(xenviron)
+				except ImportError:
+					raise ModuleNotFoundError(self.module, source=self.cpath)
+				except AttributeError:
+					raise ApplicationNotFoundInModuleError(self.class_,
+							where=self.module, source=self.cpath)
 			else:
-				m = __import__(self.module, None, None, ["load"])
-			self.body = m.load(xenviron)
+				try:
+					m = __import__(self.module, None, None, ["load"])
+					self.body = m.load(xenviron)
+				except ImportError:
+					raise NoApplicationExistsError(self.module, source=self.cpath)
 
 		else:
-			self.mtime = os.stat(self.mpath).st_mtime			
+			self.mtime = os.stat(self.mpath).st_mtime
 			path, modname = os.path.split(self.mpath)
 			modname = modname.split(".py")[0]
 			m = imp.load_module(modname, \
@@ -134,7 +124,7 @@ class ApplicationInfo(object):
 							self.body = v(xenviron)
 							break
 					else:
-						raise NoApplicationExistsError(path)
+						raise NoApplicationExistsError(path, source=self.cpath)
 
 	def unload(self):
 		self.body = None
@@ -171,6 +161,7 @@ class Root:
 		self.environ = None
 		self.start_response = None
 		self.sessionman = SessionManager()
+		self.debug = False
 
 	def register_app(self, name, cpath):
 		if name not in self._applist:
@@ -191,6 +182,9 @@ class Root:
 		return self._prepare_response(Response(code, page))
 
 	def __call__(self, environ, start_response):
+		return self.run(environ, start_response)
+
+	def run(self, environ, start_response):
 		def tuplize(x):
 			l = x.split("=")[:2]
 			if len(l) == 1:
@@ -252,8 +246,10 @@ class Root:
 		app.body.refresh(xenviron)
 		app.body.run()
 		app_xenviron, response = app.body.get()
+		
 		# further process the app_xenviron
 		self.sessionman.update(app_xenviron.session)
+
 		# return preparations
 		cookies = SimpleCookie()
 		cookies.update(app_xenviron.cookies)
@@ -268,8 +264,6 @@ class Root:
 
 		return ct
 
-##	known_options = ["path", "hotplug", "class"]
-
 	@staticmethod
 	def configure(cfgfilename, update=False):
 		root = Root()
@@ -277,9 +271,6 @@ class Root:
 		cfg.read(cfgfilename)
 
 		apps = "applications"
-
-		##assert cfg.has_section(apps), \
-		##    "Root configuration file should have `applications` section"
 
 		for app, cpath in cfg.items(apps):
 			if not app in root._applist:
@@ -297,16 +288,24 @@ class Root:
 
 		try:
 			timeout = cfg.getint("root", "timeout")
-		except:
+		except (NoSectionError,NoOptionError):
 			timeout = 0
 
 		root.sessionman.timeout = timeout
 
 		try:
 			expiretime = cfg.getint("root", "expiretime")
-		except:
+		except (NoSectionError,NoOptionError):
 			expiretime = 0
 
 		root.sessionman.expiretime = expiretime
 
+		try:
+			debug = cfg.getboolean("root", "debug")
+		except (NoSectionError,NoOptionError):
+			debug = False
+
+		root.debug = debug
+
 		return root
+
