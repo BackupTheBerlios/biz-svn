@@ -24,8 +24,11 @@ def pack():
 if "--install-script" in sys.argv:
 	scripts.append("bin/biz-postinstall.py")
 
-if not (("build" in sys.argv) or ("install" in sys.argv)):
-	pack()
+valid_options = ["sdist", "bdist", "bdist_rpm", "bdist_wininst"]
+for opt in valid_options:
+	if opt in sys.argv:
+		pack()
+		break
 
 setup(name="Biz",
 		version="0.0.3",
