@@ -1,3 +1,4 @@
+﻿# -*- coding: utf-8 -*-
 # app.py -- Biz application
 
 # Biz web application framework
@@ -24,11 +25,13 @@ from biz.content import TextContent, EmptyContent
 
 __all__ = ["Application", "SecureApplication"]
 
+_ = lambda s: s
+
 
 class Application:
 	def __init__(self, xenviron):
 		self.options = xenviron.options
-		self.content = TextContent("application default")
+		self.content = TextContent(_(u"application default"))
 
 		self.refresh(xenviron)
 		self.static()
@@ -111,6 +114,4 @@ class SecureApplication(Application):
 
 	def insecure_run(self):
 		pass
-			
-		
-	
+

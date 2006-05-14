@@ -37,8 +37,15 @@ from biz.errors import *
 
 __all__ = ["Root"]
 
-def _(s):  # TODO: Replace this with a true i18n function
-	return s
+## def _(s):  # TODO: Replace this with a true i18n function
+## 	return s
+
+import gettext
+try:
+	_ = gettext.translation("messages", "/home/yuce/prj/biz/biz/locale").ugettext # XXX
+except:
+	print _(u"Locale not found")
+	_ = lambda s: s
 
 
 class ApplicationInfo(object):
@@ -71,13 +78,13 @@ class ApplicationInfo(object):
 
 		if len(sections) < 1:
 			raise ImproperConfigFileError(self.cpath,
-					_("%s should have at least one section" % self.cpath))
+					_(u"%s should have at least one section" % self.cpath))
 
 		options = dict(cfg.items(sections[0]))
 
 		if not(options.has_key("module") ^ options.has_key("path")):
 			raise ImproperConfigFileError(self.cpath,
-					_("%s should have a ``module`` or ``path`` option, but not both" % self.cpath))
+					_(u"%s should have a ``module`` or ``path`` option, but not both" % self.cpath))
 
 		self.hotplug = options.get("hotplug", False)
 		self.module = options.get("module", None)
@@ -174,7 +181,7 @@ class Root:
 		self._error = ApplicationInfo(name, cpath=cpath)
 
 	def _default_index(self):
-		page = TextContent(_("Index method is left out."))
+		page = TextContent(_(u"Index method is left out."))
 		return self._prepare_response(Response(200, page))
 		
 	def _default_error(self, code, message):
@@ -235,7 +242,7 @@ class Root:
 				app = self._applist[name](xenviron)
 			except KeyError:
 				xenviron.error_code = 404
-				xenviron.error_message = _("Method not found")
+				xenviron.error_message = _(u"Method not found")
 
 				if self._error:
 					app = self._error(xenviron)

@@ -11,7 +11,6 @@ class Favicon(biz.Application):
 	def static(self):
 		if self.options.has_key(loc, "favicon.location"):
 			self.content = biz.CachedFileContent(self.options[loc], "image/x-icon")
-			break
 		else:
 			self.content = biz.EmptyContent()
 

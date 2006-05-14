@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # content.py
 
 # Biz web application framework
@@ -40,15 +41,21 @@ class Content(object):
 
 
 class TextContent(Content):
-	__slots__ = "content"
+	__slots__ = "content","encoding"
 	
-	def __init__(self, content=u""):
+	def __init__(self, content=u"", encoding="utf-8"):
 		Content.__init__(self, "text/plain")
-		self.content = str(content)
+		assert isinstance(content, basestring), \
+				"content should be of type unicode or regular string"
+		if isinstance(content, str):
+			self.content = unicode(content, encoding)
+		else:
+			self.content = content
 		self._clen = len(self.content)
+		self.encoding = encoding
 		
 	def get(self):
-		return [self.content]
+		return [self.content.encode(self.encoding)]
 
 
 class EmptyContent(TextContent):
@@ -57,8 +64,8 @@ class EmptyContent(TextContent):
 
 
 class HtmlContent(TextContent):
-	def __init__(self, content=u""):
-		TextContent.__init__(self, content)
+	def __init__(self, content=u"", encoding="utf-8"):
+		TextContent.__init__(self, content, encoding)
 		self.ctype = "text/html"
 		
 		
