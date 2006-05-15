@@ -1,0 +1,44 @@
+
+Biz - Web Application Framework
+===============================
+
+Biz is a GPL'd web application framework written in Python. It is currently in
+active development.
+
+Install
+-------
+
+Biz requires Python 2.4 to work, some of the examples may also depend on
+recent versions of SQLObject and/or Cheetah.
+
+Installing from source
+......................
+
+Biz uses the standard distutils, so all you have to do is::
+	
+	sudo python setup.py install
+
+Note:
+	If you are on Windows, you may want to copy ``bin/bizadmin.bat`` to a
+	directory on the path.
+
+Installing from RPM package
+...........................
+
+TODO
+
+Installing from Win32 setup package
+...................................
+
+Just double-click on ``Biz-X.X.X.win32.exe``. You may need administrator
+priviledges. The setup program creates ``bizadmin.bat`` for you at Python
+``Scripts`` directory; make sure that, ``Scripts`` directory is on the path;
+or you can copy ``bizadmin.bat`` to a directory on the path.
+
+What else?
+----------
+
+You can find more about Biz at: http://biz.berlios.de
+
+Have fun!
+
