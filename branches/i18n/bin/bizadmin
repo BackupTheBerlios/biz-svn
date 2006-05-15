@@ -1,0 +1,59 @@
+#! /usr/bin/env python
+# bizadmin.py
+
+import sys
+import os
+import os.path
+import shutil
+from optparse import OptionParser
+
+__version__ = "0.0.3"
+
+# TODO: Replace this with a true i18n function
+def _(s):
+	return s
+
+def admin_create(options, args):
+	import biz.default
+
+	def callback(path):
+		print _("Creating: %(path)s" % dict(path=path))
+
+	if len(args) < 1:
+		arg = raw_input("Project name: ")
+		if not arg:
+			return False
+
+		args = [arg]
+
+	for arg in args:
+		biz.default.unpack(arg, callback)
+
+	return True
+
+def main():
+	router = dict(create=admin_create)
+	usage = """%prog [options] command [project_name]
+commands:
+  create      creates a new project
+	"""
+
+	opt = OptionParser(usage=usage,
+			version=__version__)
+	opt.add_option("-p", "--prefix", dest="prefix", default=None,
+			help="Change source prefix")
+
+	options, args = opt.parse_args()
+
+	try:
+		result = router[args[0]](options, args[1:])
+	except (KeyError, IndexError):
+		opt.print_help()
+	else:
+		if not result:
+			opt.print_help()
+
+if __name__ == "__main__":
+	main()
+
+	
