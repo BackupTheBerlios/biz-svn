@@ -27,9 +27,10 @@ from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 from Cookie import SimpleCookie
 import urllib
 from cgi import FieldStorage
+import threading
 
 from biz.app import Application
-from biz.utility import Struct
+from biz.utility import Struct, Heads
 from biz.content import TextContent
 from biz.response import Response
 from biz.session import SessionManager, SessionError
@@ -37,15 +38,19 @@ from biz.errors import *
 
 __all__ = ["Root"]
 
+sessionman_lock = threading.Lock()
+applist_lock = threading.Lock()
+
 ## def _(s):  # TODO: Replace this with a true i18n function
 ## 	return s
 
 import gettext
-try:
-	_ = gettext.translation("messages", "/home/yuce/prj/biz/biz/locale").ugettext # XXX
-except:
-	print _(u"Locale not found")
-	_ = lambda s: s
+## try:
+## 	_ = gettext.translation("messages", "/home/yuce/prj/biz/biz/locale").ugettext # XXX
+## except:
+## 	print _(u"Locale not found")
+
+_ = lambda s: s
 
 
 class ApplicationInfo(object):
@@ -127,9 +132,12 @@ class ApplicationInfo(object):
 					self.body = m.load(xenviron)
 				except AttributeError:
 					for v in m.__dict__.itervalues():
-						if issubclass(v, Application):
-							self.body = v(xenviron)
-							break
+						try:
+							if issubclass(v, Application):
+								self.body = v(xenviron)
+								break
+						except TypeError:
+							pass
 					else:
 						raise NoApplicationExistsError(path, source=self.cpath)
 
@@ -180,13 +188,16 @@ class Root:
 	def register_error(self, name, cpath):
 		self._error = ApplicationInfo(name, cpath=cpath)
 
-	def _default_index(self):
+	def _default_index(self, start_response):
 		page = TextContent(_(u"Index method is left out."))
-		return self._prepare_response(Response(200, page))
+		return self._prepare_response(start_Response, Response(200, page))
 		
-	def _default_error(self, code, message):
-		page = TextContent(message)
-		return self._prepare_response(Response(code, page))
+	def _default_error(self, start_response, code, message):
+		response = Struct()
+		response.content = TextContent(message)
+		response.code = code
+		response.heads = Heads()
+		return self._prepare_response(start_response, Response(response))
 
 	def __call__(self, environ, start_response):
 		return self.run(environ, start_response)
@@ -198,14 +209,18 @@ class Root:
 				l.append(True)
 			return tuple(l)
 
-		self.environ = environ
-		self.start_response = start_response
-
+## 		self.environ = environ
+## 		self.start_response = start_response
+		
 		try:	
 			path_info = urllib.unquote_plus(environ["PATH_INFO"])
 		except KeyError:
 			raise WSGIKeyNotPresentError("PATH_INFO")
-
+			
+		xenviron = Struct()
+		xenviron.path = Struct()
+		xenviron.path.endswithslash = path_info.endswith("/")			
+			
 		path = [p for p in path_info.split("/") if p] or [""]
 		if "QUERY_STRING" in environ:
 			query_string = urllib.unquote_plus(environ["QUERY_STRING"])
@@ -214,60 +229,68 @@ class Root:
 			params = {}
 
 		# a dirty little trick to deny FieldStorage to use QUERY_STRING
-		self.environ["QUERY_STRING"] = ""
+## 		self.environ["QUERY_STRING"] = ""
+		environ["QUERY_STRING"] = ""
 
-		xenviron = Struct()
-		xenviron.args = path
-		xenviron.kwargs = params
+		xenviron.path.args = path
+		xenviron.path.kwargs = params
 		try:
-			xenviron.fields = FieldStorage(environ=self.environ,
-					fp=self.environ["wsgi.input"])
+## 			xenviron.fields = FieldStorage(environ=self.environ,
+## 					fp=self.environ["wsgi.input"])
+			xenviron.fields = FieldStorage(environ=environ,
+						fp=environ["wsgi.input"])
 		except KeyError:
 			raise WSGIKeyNotPresentError("wsgi.input")
+			
 		xenviron.cookies = SimpleCookie(environ.get("HTTP_COOKIE", ""))
 
 		try:
-			xenviron.cookies, xenviron.session = self.sessionman.get_session(xenviron.cookies)
-		except SessionError:
-			xenviron.session = self.sessionman.new_session()
+			sessionman_lock.acquire()
+			try:
+				xenviron.cookies, xenviron.session = self.sessionman.get_session(xenviron.cookies)
+			except SessionError:
+				xenviron.session = self.sessionman.new_session()
+		finally:
+			sessionman_lock.release()
 
 		if not path[0]:
 			if not self._index:
-				return self._default_index()
+				return self._default_index(start_response)
 
 			app = self._index(xenviron)
 		else:
 			try:
-				name = path[0]
-				app = self._applist[name](xenviron)
-			except KeyError:
-				xenviron.error_code = 404
-				xenviron.error_message = _(u"Method not found")
+				applist_lock.acquire()
+				try:
+					name = path[0]
+					app = self._applist[name](xenviron)
+					
+				except KeyError:
+					xenviron.error_code = 404
+					xenviron.error_message = _(u"Method not found")
+	
+					if self._error:
+						app = self._error(xenviron)
+					else:
+						return self._default_error(start_response, xenviron.error_code, 
+								xenviron.error_message)
+			finally:
+				applist_lock.release()				
 
-				if self._error:
-					app = self._error(xenviron)
-				else:
-					return self._default_error(xenviron.error_code, 
-							xenviron.error_message)
-
-		app.body.refresh(xenviron)
-		app.body.run()
-		app_xenviron, response = app.body.get()
+		response = app.body(xenviron)
 		
-		# further process the app_xenviron
-		self.sessionman.update(app_xenviron.session)
+		try:
+			sessionman_lock.acquire()
+			# further process the app_xenviron
+			self.sessionman.update(response.session)
+		finally:
+			sessionman_lock.release()
 
-		# return preparations
-		cookies = SimpleCookie()
-		cookies.update(app_xenviron.cookies)
-		cookies.update(app_xenviron.session.sidcookie)
-		cookies = str(cookies).split()[1]
-		response.heads.set_cookie = cookies
-		return self._prepare_response(response)
+		return self._prepare_response(start_response, Response(response))
 
-	def _prepare_response(self, response):
+	def _prepare_response(self, start_response, response):
 		rc, rh, ct = response.get_forwsgi()
-		self.start_response(rc, rh)
+		start_response(rc, rh)
 
 		return ct
 

@@ -6,13 +6,19 @@ import mimetypes
 
 from biz.content import TextContent, HtmlContent, FileContent
 
+
+# XXX: If the last argument is a directory, we have problem with
+# URLs not ending with /.
+# e.g., biz.png is mapped to /biz.png
 class FileServer:
-	def __init__(self, location):
+	def __init__(self, location, defaultindex=False):
 		self.location = location
 		self.mime_handlers = {}
 
 		assert self.location, \
 				"location should be set"
+				
+		self.defaultindex = defaultindex
 
 		if not self.location.endswith("/"):
 			self.location += "/"
@@ -21,8 +27,11 @@ class FileServer:
 		self.content = TextContent("Content never set!")
 		
 	def run(self, path_args):
-		path = "/".join(path_args[1:])
-		name = path_args[0]
+		path = "/".join(path_args)
+
+		# XXX: This is problematic!
+		if not path and self.defaultindex:
+			path = "index.html"			
 
 		newpath = os.path.join(self.location, path)
 

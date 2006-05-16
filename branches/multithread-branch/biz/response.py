@@ -17,6 +17,8 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
+from Cookie import SimpleCookie
+
 from biz.content import EmptyContent
 from biz.utility import Struct, Heads
 
@@ -95,16 +97,32 @@ def wsgi_response(start_response, response):
 
 
 class Response:
-	def __init__(self, code=200, content=EmptyContent(), **kwargs):
-		self.code = code
-		self.content = content
-		self.heads = Heads(**kwargs)
-		self.heads.content_type = self.content.ctype
-		self.heads.content_length = self.content._clen
+## 	def __init__(self, code=200, content=EmptyContent(), **kwargs):
+	def __init__(self, response):
+## 		self.code = response.code
+## 		self.content = response.content
+		
+		cookies = SimpleCookie()
+		try:
+			cookies.update(response.cookies)
+			cookies.update(response.session.sidcookie)
+			cookies = str(cookies).split()[1]
+			response.heads.set_cookie = cookies
+		except AttributeError:
+			pass
+			
+
+		
+## 		self.heads = Heads(**kwargs)
+## 		self.heads.content_type = response.content.ctype
+## 		self.heads.content_length = response.content._clen
+		
+		self.response = response
 
 	def get_forwsgi(self):
-		return ("%d %s" % (self.code,RESPONSES.get(self.code, ["Unknown"])[0]), \
-				self.heads._getlist(),self.content.get())
+		r = self.response
+		return ("%d %s" % (r.code,RESPONSES.get(r.code, ["Unknown"])[0]), \
+				r.heads._getlist(),r.content.get())
 
 
 
