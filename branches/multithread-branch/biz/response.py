@@ -116,6 +116,8 @@ class Response:
 ## 		self.heads = Heads(**kwargs)
 ## 		self.heads.content_type = response.content.ctype
 ## 		self.heads.content_length = response.content._clen
+		response.heads.content_type = response.content.ctype
+		response.heads.content_length = response.content._clen
 		
 		self.response = response
 

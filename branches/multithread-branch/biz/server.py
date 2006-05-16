@@ -100,10 +100,6 @@ class BizWSGIRequestHandler(BaseHTTPRequestHandler):
 	def get_stderr(self):
 		return sys.stderr
 
-
-	def __handler(app):  # REMOVE
-		print app
-		
 	def handle(self):
 		"""Handle a single HTTP request"""
 
