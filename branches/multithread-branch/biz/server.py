@@ -1,20 +1,11 @@
 # server.py -- BizServer
 # Based on P. J. Eby's simple_server.py
 
-"""BaseHTTPServer that implements the Python WSGI protocol (PEP 333, rev 1.21)
-
-This is both an example of how WSGI can be implemented, and a basis for running
-simple web applications on a local machine, such as might be done when testing
-or debugging an application.  It has not been reviewed for security issues,
-however, and we strongly recommend that you use a "real" web server for
-production use.
-
-For example usage, see the 'if __name__=="__main__"' block at the end of the
-module.  See also the BaseHTTPServer module docs for other API information.
-"""
-
+import time
+import thread
 from optparse import OptionParser
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+import SocketServer
 import urllib, sys
 from handlers import SimpleHandler
 
@@ -39,7 +30,7 @@ class ServerHandler(SimpleHandler):
 			SimpleHandler.close(self)
 
 
-class BizWSGIServer(HTTPServer):
+class BizWSGIServer(SocketServer.ThreadingMixIn, HTTPServer):
 	"""BaseHTTPServer that implements the Python WSGI protocol"""
 
 	application = None
@@ -109,6 +100,10 @@ class BizWSGIRequestHandler(BaseHTTPRequestHandler):
 	def get_stderr(self):
 		return sys.stderr
 
+
+	def __handler(app):  # REMOVE
+		print app
+		
 	def handle(self):
 		"""Handle a single HTTP request"""
 
@@ -120,6 +115,7 @@ class BizWSGIRequestHandler(BaseHTTPRequestHandler):
 			self.rfile, self.wfile, self.get_stderr(), self.get_environ()
 		)
 		handler.request_handler = self      # backpointer for logging
+		
 		handler.run(self.server.get_app())
 
 
@@ -141,7 +137,7 @@ def run(root):
 	httpd = BizWSGIServer(address, BizWSGIRequestHandler)
 	httpd.set_app(root)
 	sa = httpd.socket.getsockname()
-
+	
 	print "Serving HTTP on", sa[0], "port", sa[1], "..."
 	try:
 		if count:
@@ -149,13 +145,14 @@ def run(root):
 				httpd.handle_request()  # serve one request, then exit
 
 		else:
-			httpd.serve_forever()
+			while 1:
+				try:
+					thread.start_new_thread(httpd.handle_request,())
+					time.sleep(0.5)
+				except thread.error:
+					pass
+				
 
 	except KeyboardInterrupt:
 		pass
-##
-##if __name__ == '__main__':
-##    main()
-
-
 

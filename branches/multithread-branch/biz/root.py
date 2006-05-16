@@ -115,7 +115,7 @@ class ApplicationInfo(object):
 				try:
 					m = __import__(self.module, None, None, ["load"])
 					self.body = m.load(xenviron)
-				except ImportError:
+				except (ImportError,AttributeError):
 					raise NoApplicationExistsError(self.module, source=self.cpath)
 
 		else:
@@ -189,8 +189,11 @@ class Root:
 		self._error = ApplicationInfo(name, cpath=cpath)
 
 	def _default_index(self, start_response):
-		page = TextContent(_(u"Index method is left out."))
-		return self._prepare_response(start_Response, Response(200, page))
+		response = Struct()
+		response.content = TextContent(_(u"Index method is left out"))
+		response.code = TextContent(_(u"Index method is left out"))
+		response.heads = Heads()
+		return self._prepare_response(start_response, response)
 		
 	def _default_error(self, start_response, code, message):
 		response = Struct()
@@ -215,7 +218,12 @@ class Root:
 		try:	
 			path_info = urllib.unquote_plus(environ["PATH_INFO"])
 		except KeyError:
-			raise WSGIKeyNotPresentError("PATH_INFO")
+			path_info = ""
+		
+		try:
+			path_info = "/%s%s" %(environ["SCRIPT_NAME"],path_info)
+		except KeyError:
+			raise WSGIKeyNotFoundError("SCRIPT_NAME", source="root.py")
 			
 		xenviron = Struct()
 		xenviron.path = Struct()
@@ -260,7 +268,7 @@ class Root:
 			app = self._index(xenviron)
 		else:
 			try:
-				applist_lock.acquire()
+## 				applist_lock.acquire()
 				try:
 					name = path[0]
 					app = self._applist[name](xenviron)
@@ -275,7 +283,8 @@ class Root:
 						return self._default_error(start_response, xenviron.error_code, 
 								xenviron.error_message)
 			finally:
-				applist_lock.release()				
+				pass
+## 				applist_lock.release()				
 
 		response = app.body(xenviron)
 		
