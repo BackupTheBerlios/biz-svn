@@ -126,20 +126,24 @@ class ApplicationInfo(object):
 					*imp.find_module(modname, [path]))
 
 			if self.class_:
-				self.body = m.__getattribute__(self.class_)(xenviron)
+				try:
+					self.body = m.__getattribute__(self.class_)(xenviron)
+				except AttributeError:
+					raise ApplicationNotFoundInModuleError(self.class_,
+						where=self.mpath, source="root")
 			else:
 				try:
 					self.body = m.load(xenviron)
 				except AttributeError:
-					for v in m.__dict__.itervalues():
-						try:
-							if issubclass(v, Application):
-								self.body = v(xenviron)
-								break
-						except TypeError:
-							pass
-					else:
-						raise NoApplicationExistsError(path, source=self.cpath)
+##					for v in m.__dict__.itervalues():
+## 						try:
+## 							if issubclass(v, Application):
+## 								self.body = v(xenviron)
+## 								break
+## 						except TypeError:
+## 							pass
+## 					else:
+					raise NoApplicationExistsError(path, source=self.cpath)
 
 	def unload(self):
 		self.body = None
@@ -163,7 +167,11 @@ class ApplicationInfo(object):
 
 	def __call__(self, xenviron):
 		if not self.body or self._is_modified():
-			self._reload(xenviron)
+			try:
+				applist_lock.acquire()
+				self._reload(xenviron)
+			finally:
+				applist_lock.release()
 
 		return self
 		
@@ -191,9 +199,9 @@ class Root:
 	def _default_index(self, start_response):
 		response = Struct()
 		response.content = TextContent(_(u"Index method is left out"))
-		response.code = TextContent(_(u"Index method is left out"))
+		response.code = 404
 		response.heads = Heads()
-		return self._prepare_response(start_response, response)
+		return self._prepare_response(start_response, Response(response))
 		
 	def _default_error(self, start_response, code, message):
 		response = Struct()
@@ -212,9 +220,6 @@ class Root:
 				l.append(True)
 			return tuple(l)
 
-## 		self.environ = environ
-## 		self.start_response = start_response
-		
 		try:	
 			path_info = urllib.unquote_plus(environ["PATH_INFO"])
 		except KeyError:
@@ -237,14 +242,11 @@ class Root:
 			params = {}
 
 		# a dirty little trick to deny FieldStorage to use QUERY_STRING
-## 		self.environ["QUERY_STRING"] = ""
 		environ["QUERY_STRING"] = ""
 
 		xenviron.path.args = path
 		xenviron.path.kwargs = params
 		try:
-## 			xenviron.fields = FieldStorage(environ=self.environ,
-## 					fp=self.environ["wsgi.input"])
 			xenviron.fields = FieldStorage(environ=environ,
 						fp=environ["wsgi.input"])
 		except KeyError:
