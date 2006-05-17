@@ -23,15 +23,15 @@ from biz.utility import Struct, Heads
 
 from biz.content import TextContent, EmptyContent
 
-__all__ = ["RequestHandler", "CompositeRequestHandler",
-			"Application"] ##, "SecureApplication"]
+__all__ = ["ArgHandler", "CompositeArgHandler",
+			"Application", "StaticApplication"] ##, "SecureApplication"]
 
 
 # TODO: Needs i18n here
 _ = lambda s: s
 	
 
-class RequestHandler:
+class ArgHandler:
 	def __init__(self, app):
 		self.app = app
 		self.response = Struct()
@@ -62,7 +62,7 @@ class RequestHandler:
 		self.response.content = EmptyContent()
 		
 		
-class CompositeRequestHandler(RequestHandler):
+class CompositeArgHandler(ArgHandler):
 	def __call__(self, request):
 		args = request.path.args
 		try:
@@ -107,10 +107,29 @@ class Application:
 			
 		return handler(request)
 
-	class Handler(RequestHandler):
+	class Handler(ArgHandler):
+		def dynamic(self):
+			self.response.content = TextContent(_(u"application default"))
+
+
+class StaticApplication:
+	def __init__(self, xenviron):
+		self.options = xenviron.options
+		self.response = Struct()
+		self.response.content = TextContent(_(u"application default"))
+		self.response.session = xenviron.session
+		self.response.cookies = xenviron.cookies
+		self.response.heads = Heads()
+		
+		self.static()
+		
+	def static(self):
 		pass
-
-
+		
+	def __call__(self, request):
+		return self.response
+		
+		
 ## class SecureApplication(Application):
 ## 	def refresh(self, xenviron):
 ## 		Application.refresh(self, xenviron)

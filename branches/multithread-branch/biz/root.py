@@ -114,9 +114,14 @@ class ApplicationInfo(object):
 			else:
 				try:
 					m = __import__(self.module, None, None, ["load"])
+				except ImportError, e:
+					print "Import error:", e
+				try:
 					self.body = m.load(xenviron)
-				except (ImportError,AttributeError):
-					raise NoApplicationExistsError(self.module, source=self.cpath)
+## 				except (ImportError,AttributeError):
+				except AttributeError, e:
+					print "Attr error:", e
+## 					raise NoApplicationExistsError(self.module, source=self.cpath)
 
 		else:
 			self.mtime = os.stat(self.mpath).st_mtime

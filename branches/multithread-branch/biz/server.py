@@ -141,12 +141,13 @@ def run(root):
 				httpd.handle_request()  # serve one request, then exit
 
 		else:
-			while 1:
-				try:
-					thread.start_new_thread(httpd.handle_request,())
-					time.sleep(0.5)
-				except thread.error:
-					pass
+			httpd.serve_forever()
+## 			while 1:
+## 				try:
+## 					thread.start_new_thread(httpd.handle_request,())
+## 					time.sleep(0.5)
+## 				except thread.error:
+## 					pass
 				
 
 	except KeyboardInterrupt:
