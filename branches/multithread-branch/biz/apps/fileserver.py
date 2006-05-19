@@ -24,7 +24,7 @@ class FileServerApp(biz.Application):
 				fileserver.run(path.args)
 				self.response.code, self.response.content = fileserver.get()
 			else:
-				self.redirect("/%s/" % "/".join(path.prevargs + path.args))
+				self.redirect("/%s/" % "/".join(path.prevargs + path.args), permanent=True)
 
 
 def load(x):

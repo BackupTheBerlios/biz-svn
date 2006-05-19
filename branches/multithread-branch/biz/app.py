@@ -56,8 +56,11 @@ class ArgHandler:
 		"""
 		pass
 		
-	def redirect(self, location):
-		self.response.code = 307
+	def redirect(self, location, permanent=False):
+		if permanent:
+			self.response.code = 301
+		else:
+			self.response.code = 307
 		self.response.heads.location = location
 		self.response.content = EmptyContent()
 		
@@ -83,6 +86,8 @@ class CompositeArgHandler(ArgHandler):
 class Application:
 	def __init__(self, xenviron):
 		self.options = xenviron.options
+		self.name = xenviron.path.args[0]
+		self.scriptname = xenviron.path.scriptname
 		self.static()
 
 	def static(self):

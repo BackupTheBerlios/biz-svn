@@ -1,5 +1,6 @@
 # vfolder_app.py
 
+import sys  # REMOVE
 import os
 import os.path
 import glob
@@ -28,13 +29,13 @@ class VirtualFolder(Application):
 		self.wildcard = self.options.get("vfolder.wildcard", "*")
 		self.mime_handlers = {}
 		
-	class Handler(RequestHandler):
+	class Handler(ArgHandler):
 		def dynamic(self):
-			path_items = self.request.path.args
-			path = "/".join(path_items)
-			name = "/".join(self.request.path.prevargs)
-			newpath = os.path.join(self.app.location, path)
-	
+			path = self.request.path
+			pathstr = "/".join(path.args)
+			name = os.path.join(path.scriptname.strip("/"), "/".join(path.prevargs))
+			newpath = os.path.join(self.app.location, pathstr)
+			
 			if os.path.isfile(newpath):
 				self.response.content = self.app.handle_file(newpath)
 	
@@ -56,7 +57,7 @@ class VirtualFolder(Application):
 ## 						self.response.content = self.app.handle_file(index)
 ## 						return
 	
-				page = "\n".join(["<html><head><title>Browsing: /%s</title></head><body><ul>" % path,
+				page = "\n".join(["<html><head><title>Browsing: /%s</title></head><body><ul>" % pathstr,
 						"<b>Directories</b>",
 						"\n".join([self.app._fformat(newpath, name, x, True) for x in dirs]),
 						"<b>Files</b>",

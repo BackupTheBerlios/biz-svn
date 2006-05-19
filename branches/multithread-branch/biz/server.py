@@ -9,7 +9,7 @@ import SocketServer
 import urllib, sys
 from handlers import SimpleHandler
 
-__version__ = "0.1"
+__version__ = "0.2"
 __all__ = ['BizWSGIServer','BizWSGIRequestHandler']
 
 

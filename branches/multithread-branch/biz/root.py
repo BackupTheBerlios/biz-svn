@@ -41,9 +41,6 @@ __all__ = ["Root"]
 sessionman_lock = threading.Lock()
 applist_lock = threading.Lock()
 
-## def _(s):  # TODO: Replace this with a true i18n function
-## 	return s
-
 import gettext
 ## try:
 ## 	_ = gettext.translation("messages", "/home/yuce/prj/biz/biz/locale").ugettext # XXX
@@ -133,9 +130,9 @@ class ApplicationInfo(object):
 			if self.class_:
 				try:
 					self.body = m.__getattribute__(self.class_)(xenviron)
-				except AttributeError:
+				except AttributeError, e:
 					raise ApplicationNotFoundInModuleError(self.class_,
-						where=self.mpath, source="root")
+						where=self.mpath, source="root", msg=e)
 			else:
 				try:
 					self.body = m.load(xenviron)
@@ -182,7 +179,7 @@ class ApplicationInfo(object):
 		
 
 class Root:
-	def __init__(self):
+	def __init__(self, meltscriptname=False):
 		self._applist = {}  # all apps
 		self._index = None  # index app
 		self._error = None
@@ -190,6 +187,7 @@ class Root:
 		self.start_response = None
 		self.sessionman = SessionManager()
 		self.debug = False
+		self.meltscriptname = meltscriptname
 
 	def register_app(self, name, cpath):
 		if name not in self._applist:
@@ -230,10 +228,11 @@ class Root:
 		except KeyError:
 			path_info = ""
 		
-		try:
-			path_info = "/%s%s" %(environ["SCRIPT_NAME"],path_info)
-		except KeyError:
-			raise WSGIKeyNotFoundError("SCRIPT_NAME", source="root.py")
+		if not self.meltscriptname:
+			try:
+				path_info = "%s%s" %(environ["SCRIPT_NAME"],path_info)
+			except KeyError:
+				raise WSGIKeyNotFoundError("SCRIPT_NAME", source="root.py")
 			
 		xenviron = Struct()
 		xenviron.path = Struct()
@@ -249,7 +248,16 @@ class Root:
 		# a dirty little trick to deny FieldStorage to use QUERY_STRING
 		environ["QUERY_STRING"] = ""
 
-		xenviron.path.args = path
+		if self.meltscriptname:
+			try:
+				xenviron.path.args = path
+				xenviron.path.scriptname = environ["SCRIPT_NAME"]
+			except KeyError:
+				raise WSGIKeyNotPresentError("SCRIPT_NAME")
+		else:
+			xenviron.path.args = path
+			xenviron.path.scriptname = ""
+		
 		xenviron.path.kwargs = params
 		try:
 			xenviron.fields = FieldStorage(environ=environ,
@@ -267,32 +275,29 @@ class Root:
 				xenviron.session = self.sessionman.new_session()
 		finally:
 			sessionman_lock.release()
+			
+		appname = path[0]
 
-		if not path[0]:
+		if not appname:
 			if not self._index:
 				return self._default_index(start_response)
 
 			app = self._index(xenviron)
 		else:
 			try:
-## 				applist_lock.acquire()
-				try:
-					name = path[0]
-					app = self._applist[name](xenviron)
-					
-				except KeyError:
-					xenviron.error_code = 404
-					xenviron.error_message = _(u"Method not found")
-	
-					if self._error:
-						app = self._error(xenviron)
-					else:
-						return self._default_error(start_response, xenviron.error_code, 
-								xenviron.error_message)
-			finally:
-				pass
-## 				applist_lock.release()				
+				name = appname
+				app = self._applist[name](xenviron)
+				
+			except KeyError:
+				xenviron.error_code = 404
+				xenviron.error_message = _(u"Method not found")
 
+				if self._error:
+					app = self._error(xenviron)
+				else:
+					return self._default_error(start_response, xenviron.error_code, 
+							xenviron.error_message)
+							
 		response = app.body(xenviron)
 		
 		try:

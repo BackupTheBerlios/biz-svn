@@ -30,13 +30,8 @@ for opt in valid_options:
 		pack()
 		break
 		
-version_file = file("VERSION")
-version_string = version_file.read().strip()
-version_file.close()
-
 setup(name="biz",
-## 		version="0.0.10",
-		version=version_string,
+		version="0.0.13",
 		url="http://biz.berlios.de",
 		download_url="http://developer.berlios.de/project/showfiles.php?group_id=6616",
 		author="Yuce Tekol",
