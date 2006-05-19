@@ -30,7 +30,7 @@ class ServerHandler(SimpleHandler):
 			SimpleHandler.close(self)
 
 
-class BizWSGIServer(SocketServer.ThreadingMixIn, HTTPServer):
+class BizWSGIServer(HTTPServer):
 	"""BaseHTTPServer that implements the Python WSGI protocol"""
 
 	application = None
@@ -55,6 +55,10 @@ class BizWSGIServer(SocketServer.ThreadingMixIn, HTTPServer):
 
 	def set_app(self,application):
 		self.application = application
+
+
+class BizMultithreadWSGIServer(SocketServer.ThreadingMixIn, BizWSGIServer):
+	pass
 
 
 class BizWSGIRequestHandler(BaseHTTPRequestHandler):
@@ -122,19 +126,25 @@ def run(root):
 			help="specify server address (default: localhost)")
 	op.add_option("-p", "--port", dest="port", default="8000",
 			help="specify server port (default: 8000)")
-	op.add_option("-c", "--count", dest="count", default="0",
+	op.add_option("-c", "--count", dest="count", default=0,
 			help="specify number of requests to handle (default: run forever)")
+	op.add_option("-m", "--multithread", action="store_true", default=False,
+			help="run the server multithreaded")
 	
 	ops, args = op.parse_args()
 
 	address = (ops.address, int(ops.port))
 	count = int(ops.count)
-
-	httpd = BizWSGIServer(address, BizWSGIRequestHandler)
+	
+	if ops.multithread:
+		httpd = BizMultithreadWSGIServer(address, BizWSGIRequestHandler)
+	else:
+		httpd = BizWSGIServer(address, BizWSGIRequestHandler)
+		
 	httpd.set_app(root)
 	sa = httpd.socket.getsockname()
 	
-	print "Serving HTTP on", sa[0], "port", sa[1], "..."
+	print "Serving HTTP on", sa[0], "port", sa[1], "multithread=%d" % ops.multithread, "..."
 	try:
 		if count:
 			for i in range(count):
@@ -142,13 +152,6 @@ def run(root):
 
 		else:
 			httpd.serve_forever()
-## 			while 1:
-## 				try:
-## 					thread.start_new_thread(httpd.handle_request,())
-## 					time.sleep(0.5)
-## 				except thread.error:
-## 					pass
-				
 
 	except KeyboardInterrupt:
 		pass
