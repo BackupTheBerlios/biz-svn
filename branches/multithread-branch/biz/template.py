@@ -1,107 +1,224 @@
+# template.py -- Biz templating
 
-# based on the recipe by by tomer filiba
-# taken from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/496702
+# Biz web application framework
+# Copyright (C) 2006  Yuce Tekol
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
+
 
 import re
+from collections import deque
 
 
-class Template(object):
-	delimiter = re.compile(r"\{%(.*?)%\}", re.DOTALL)
-	value = re.compile(r"\$\{(\w+)\}")
-	TEXT = 0
-	CODE = 1
-	VARIABLE = 2
+class Parser:
+	beginline = re.compile(r"(.*(\{%){0})(\{%)(.*)")
+	endline = re.compile(r"^\s*(%\})(.*)")
+	onelinerline = re.compile(r"(.*)(\{%){0}(\{%)(.*)(%\}){0}(%\})(.*)")
+	chainedline = re.compile(r"^\s*(%\})(.*)(\{%)\s*$")
+	
+	TEXT, HEADER, END, CHAIN, ONELINER = \
+		"text", "header", "end", "chain", "oneliner"
+	
+	def __init__(self):
+		self.handlers = [("chain",self.chainedline),
+						("oneliner",self.onelinerline),
+						("header",self.beginline),
+						("end",self.endline)]
+						
+		self.items = []
 
-	def __init__(self, template):
-		self.tokens = self.compile(template)
-
-	@classmethod
-	def from_file(cls, file):
-		"""
-		loads a template from a file. `file` can be either a string, specifying
-		a filename, or a file-like object, supporting read() directly
-		"""
-		if isinstance(file, basestring):
-			file = open(file)
-		return cls(file.read())
-
-	@classmethod
-	def compile(cls, template):
-		tokens = []
-		for i, part in enumerate(cls.delimiter.split(template)):
-			print "part =", part
-			if i % 2 == 0:
-				if part:
-					for j, p in enumerate(cls.value.split(part)):
-						if j % 2 == 0:
-							tokens.append((cls.TEXT, p.replace("{\\%", "{%")))
-						else:
-							tokens.append((cls.VARIABLE, p))
-
+	def handle_header(self, groups):
+		text, none_, symb, code = groups		
+		if text:
+			self.items.append((self.TEXT,text))
+		
+		self.items.append((self.HEADER,code.strip()))
+		
+	def handle_end(self, groups):
+		symb, text = groups		
+		self.items.append((self.END,None))
+		if text:
+			self.items.append((self.TEXT,"%s\n" % text))
+			
+	def handle_chain(self, groups):
+		symb1, code, symb2 = groups		
+		self.items.append((self.CHAIN,code.strip()))
+		
+	def handle_oneliner(self, groups):
+		print "oneliner", groups
+		btext, none1, symb1, code, none2, symb2, atext = groups
+		
+		if btext:
+			self.items.append((self.TEXT,btext))
+		
+		self.items.append((self.ONELINER,code.strip()))
+		
+		if atext:
+			self.items.append((self.TEXT,"%s\n" % atext))
+		
+	def handle_text(self, text):
+		self.items.append((self.TEXT,"".join(text)))
+	
+	def parse(self, lines):
+		text = []
+		for line in lines.split("\n"):
+			if not line:
+				continue
+				
+			for handler, parser in self.handlers:
+				r = parser.search(line)
+				if r:
+					if text:
+						self.handle_text(text)
+						text = []
+						
+					getattr(self, "handle_%s" % handler)(r.groups())
+					break
 			else:
-				if not part.strip():
-					continue
-				lines = part.replace("%\\}", "%}").splitlines()
-				margin = min(len(l) - len(l.lstrip()) for l in lines if l.strip())
-				realigned = "\n".join(l[margin:] for l in lines)
-				code = compile(realigned, "<templite %r>" % (realigned[:20],), "exec")
-				tokens.append((cls.CODE,code))
-		return tokens
+				self.handle_text(r"%s\n" % line)
 
-	def render(__self, __namespace = None, **kw):
-		"""
-		renders the template according to the given namespace. 
-		__namespace - a dictionary serving as a namespace for evaluation
-		**kw - keyword arguments which are added to the namespace
-		"""
-		namespace = {}
-		if __namespace: namespace.update(__namespace)
-		if kw: namespace.update(kw)
 
+class Template:
+	variable = re.compile(r"\$[{]?(\w+)[}]?")
+
+	def __init__(self, tmpl):
+		self.levels = deque()
+		self.levels.append(0)
+
+		self.variables = {}
+		self._outlist = []
+		self.output = tmpl
+		self.changed = True
+		
 		def emitter(*args):
-			for a in args: output.append(str(a))
-		def fmt_emitter(fmt, *args):
-			output.append(fmt % args)
-		namespace["emit"] = emitter
-		namespace["emitf"] = fmt_emitter
-
-		output = []
-		for type_, value in __self.tokens:
-			if type_ == __self.CODE:
-				eval(value, namespace)
-			elif type_ == __self.VARIABLE:
-				output.append(str(namespace[value]))
+			self._outlist.extend([str(a) for a in args])			
+		self.variables["__emit"] = emitter
+		
+		parser = Parser()
+		parser.parse(tmpl)
+		self.parsed = parser.items
+		
+	def render(self, force=False):
+		if force or self.changed:
+			self._outlist = []
+			code = "\n".join(self.walk())
+			namespace = self.variables.copy()
+	
+			exec code in namespace
+			self.output = "".join(self._outlist)
+			
+			self.changed = False
+			
+		return self.output
+		
+	__str__ = render
+		
+	def __setitem__(self, attr, value):
+		self.variables[attr] = value
+		self.changed = True
+		
+	@staticmethod
+	def from_file(filename):
+		f = file(filename)
+		try:
+			return Template(f.read())
+		finally:
+			f.close()
+		
+	@staticmethod
+	def from_parsed(parsed):
+		template = Template("")
+		template.parsed = parsed  # XXX: parsed is copied shallowly
+		return template
+		
+	def copy(self, onlyparsed=False):
+		if onlyparsed:
+			return self.from_parsed(self.parsed)
+		else:
+			template = self.from_parsed(self.parsed)
+			template.variables = self.variables.copy()
+			
+			return template	
+		
+	def handle_header(self, value, level):
+		output = "%s%s:" % ("\t"*level,value)
+		self.levels.append(level)
+		return (level + 1,output)
+		
+	def handle_end(self, value, level):
+		return (self.levels.pop(),"")
+		
+	def handle_chain(self, value, level):
+		newlevel = self.levels.pop()
+		self.levels.append(newlevel)
+		output = "%s%s:" % ("\t"*newlevel,value)
+		return (newlevel + 1,output)
+		
+	def handle_oneliner(self, value, level):
+		if value.startswith("#"):
+			return (level,"")
+			
+		return (level,"%s__emit(%s)" % ("\t"*level,value))
+		
+	def handle_text(self, value, level):
+		def q(i, v):
+			if i % 2:
+				return "%s" % v
 			else:
-				output.append(value)
+				return "'''%s'''" % v
+				
+		values = [q(*iv) for iv in enumerate(self.variable.split(value))]
+		output = "%s__emit(%s)" % ("\t"*level,", ".join(values))
+		return (level,output)
+		
+	def walk(self):
+		level = 0
+		output = []
+		for handler, value in self.parsed:
+			level, out = getattr(self, "handle_%s" % handler)(value, level)
+			if out:
+				output.append(out)
+				
+		return output
 
-		return "".join(output)
 
-
-	# shorthand
-	__call__ = render
-	
-	
 if __name__ == "__main__":
- 	people = dict(yuce=27, gugu=24)
- 
-	page = r"""
- <html>
-	 <body>
-		 <table>
-			 {%
-				for name, age in people.iteritems():
-					emit("<tr>\n")
-					emit("\t<td>Name:", name, "</td>\n")
-					emit("\t<td>Age:", age, "</td>\n")
-					emit("</tr>\n")
-			 %}
-			 {%# comment %}
-			 {\% this will be in the output %}
-			 this is the value of variable: ${variable}
-		 </table>
-	 </body>
- </html>"""
+	test = """
+<html>
+<body>
+{% for name, age in people.iteritems()
+<tr>
+<td>${name}</td>
+before text {% if age > 10
+<td>${age}</td>
+ifififi
+%} elif age > 5 {%
+<td>young</td>
+elelel
+%} else {%
+<td>very young</td>
+%} after text
+</tr>
+%}
+before oneliner {% 2*2 %} after oneliner
+${age}
+{% # this is supposed to be a comment %}
+</body>
+</html>
+"""
 
-	template = Template(page)
-	print template(people=people, variable=4)
-
+	template = Template(test)
+	template["people"] = dict(yuce=27, gugu=24)
+	print str(template)
