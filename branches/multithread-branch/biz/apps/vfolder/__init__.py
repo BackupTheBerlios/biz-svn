@@ -6,28 +6,36 @@ import os.path
 import glob
 import mimetypes
 
-## from biz.app import Application
-## from biz.content import TextContent, HtmlContent, FileContent
-
 from biz import *
+from biz.template import Template
 
 
 class VirtualFolder(Application):
-	"""	environ["virtualfolder.location"] should point to the
-	preferred starting directory
-	environ["virtualfolder.wildcard"] may contain the wildcard
-	(default: *).
 	"""
+	* vfolder.location should point to the preferred starting directory
+	* vfolder.wildcard may contain the wildcard (default: *).
+	* vfolder.template may point to the template (default: apps/vfolder/vfolder.tmpl)
+	"""
+	class NamedLocation:
+		def __init__(self, path, xname, name, applocation):
+			tail = os.path.split(name)[1]
+			self.href = os.path.join("/"+xname, path[len(applocation):], tail)
+			self.name = tail
+			
 	def static(self):
-		self.location = self.options.get("vfolder.location", "")
+		self.location = self.options.main.get("vfolder.location", "")
 		assert self.location, \
 				"vfolder.location should be set"
 
 		if not self.location.endswith("/"):
 			self.location += "/"
 			
-		self.wildcard = self.options.get("vfolder.wildcard", "*")
+		self.wildcard = self.options.main.get("vfolder.wildcard", "*")
 		self.mime_handlers = {}
+		
+		templ = self.options.main.get("vfolder.template",
+					os.path.join(os.path.dirname(__file__), "vfolder.tmpl"))
+		self.template = Template.from_file(templ)
 		
 	class Handler(ArgHandler):
 		def dynamic(self):
@@ -56,15 +64,16 @@ class VirtualFolder(Application):
 ## 					if index in files:
 ## 						self.response.content = self.app.handle_file(index)
 ## 						return
-	
-				page = "\n".join(["<html><head><title>Browsing: /%s</title></head><body><ul>" % pathstr,
-						"<b>Directories</b>",
-						"\n".join([self.app._fformat(newpath, name, x, True) for x in dirs]),
-						"<b>Files</b>",
-						"\n".join([self.app._fformat(newpath, name, x, True) for x in files]),
-						"</ul></body></html>"])
+
+				template = self.app.template.copy(True)
+				template["title"] = "Browsing: /%s" % pathstr
+				template["header"] = "Browsing: /%s" % pathstr
+				template["label_dirs"] = "Directories"
+				template["label_files"] = "Files"
+				template["dirs"] = [self.app.NamedLocation(newpath, name, x, self.app.location) for x in dirs]
+				template["files"] = [self.app.NamedLocation(newpath, name, x, self.app.location) for x in files]
 				
-				self.response.content = HtmlContent(page)
+				self.response.content = HtmlContent(str(template))
 	
 			elif not os.path.exists(newpath):
 				self.response.code = 404
@@ -72,14 +81,6 @@ class VirtualFolder(Application):
 			else:
 				self.response.code = 500
 				self.response.content = TextContent("error")
-
-	def _fformat(self, path, xname, name, isdir):
-		tail = os.path.split(name)[1]
-		href = os.path.join("/"+xname, path[len(self.location):], tail)
-		if isdir:
-			return '<li><a href="%s">%s</a></li>' % (href,tail)
-		else:
-			return "<li>%s</li>" % tail
 
 	def handle_file(self, fname):
 		mime_type = mimetypes.guess_type(fname)[0] or "application/octet-stream"
@@ -104,25 +105,25 @@ def python_handler(fname):
 def source_handler(fname):
 	return FileContent(fname, "text/plain")
 
-def zip_handler(fname):
-	import zipfile
+## def zip_handler(fname):
+## 	import zipfile
 
-	try:
-		f = zipfile.ZipFile(fname)
-	except IOError:
-		return TextContent("File error")
+## 	try:
+## 		f = zipfile.ZipFile(fname)
+## 	except IOError:
+## 		return TextContent("File error")
 
-	page = "\n".join(["<html><head><title>Browsing Inside: %s</title></head>" % os.path.split(fname)[1],
-						"<body><ul>",
-						"\n".join(["<li>%s</li>" % n for n in f.namelist()]),
-						"</ul></body></html>"])
-						
-	return HtmlContent(page)
+## 	page = "\n".join(["<html><head><title>Browsing Inside: %s</title></head>" % os.path.split(fname)[1],
+## 						"<body><ul>",
+## 						"\n".join(["<li>%s</li>" % n for n in f.namelist()]),
+## 						"</ul></body></html>"])
+## 						
+## 	return HtmlContent(page)
 
 def load(xenviron):
 	vfolder = VirtualFolder(xenviron)
 	vfolder.add_handler("text/x-python", python_handler)
-	vfolder.add_handler("application/zip", zip_handler)
+##	vfolder.add_handler("application/zip", zip_handler)
 	
 	for m in ["text/x-csrc", "text/x-chdr", "text/x-c++src", "text/x-c++hdr"]:
 		vfolder.add_handler(m, source_handler)

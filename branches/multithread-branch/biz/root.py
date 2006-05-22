@@ -81,17 +81,26 @@ class ApplicationInfo(object):
 		if len(sections) < 1:
 			raise ImproperConfigFileError(self.cpath,
 					_(u"%s should have at least one section" % self.cpath))
+					
+		options = Struct()
+		options.main = mainsect = dict(cfg.items(sections[0]))
+		options.sections = sections[1:]
 
-		options = dict(cfg.items(sections[0]))
+## 		if not(options.has_key("module") ^ options.has_key("path")):
+## 			raise ImproperConfigFileError(self.cpath,
+## 					_(u"%s should have a ``module`` or ``path`` option, but not both" % self.cpath))
 
-		if not(options.has_key("module") ^ options.has_key("path")):
+		if not(mainsect.has_key("module") ^ mainsect.has_key("path")):
 			raise ImproperConfigFileError(self.cpath,
 					_(u"%s should have a ``module`` or ``path`` option, but not both" % self.cpath))
+					
+		for sectname in sections[1:]:
+			options[sectname] = dict(cfg.items(sectname))
 
-		self.hotplug = options.get("hotplug", False)
-		self.module = options.get("module", None)
-		self.mpath = options.get("path", "")
-		self.class_ = options.get("class", "")
+		self.hotplug = mainsect.get("hotplug", False)
+		self.module = mainsect.get("module", None)
+		self.mpath = mainsect.get("path", "")
+		self.class_ = mainsect.get("class", "")
 
 		return options
 
@@ -232,7 +241,7 @@ class Root:
 			try:
 				path_info = "%s%s" %(environ["SCRIPT_NAME"],path_info)
 			except KeyError:
-				raise WSGIKeyNotFoundError("SCRIPT_NAME", source="root.py")
+				raise WSGIKeyNotPresentError("SCRIPT_NAME", source="root.py")
 			
 		xenviron = Struct()
 		xenviron.path = Struct()

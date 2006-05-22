@@ -80,7 +80,7 @@ class CompositeArgHandler(ArgHandler):
 			return self.__handle(request)
 			
 	def __handle(self, request):
-		return RequestHandler.__call__(self, request)
+		return ArgHandler.__call__(self, request)
 		
 
 class Application:
@@ -134,40 +134,3 @@ class StaticApplication:
 	def __call__(self, request):
 		return self.response
 		
-		
-## class SecureApplication(Application):
-## 	def refresh(self, xenviron):
-## 		Application.refresh(self, xenviron)
-
-## 		try:
-## 			self.authenticated = self.session.authenticated
-## 			self.userid = self.session.userid
-## 		except:
-## 			self.authenticated = False
-## 			self.userid = None
-
-## 		if self.authenticated:
-## 			self.run = self.secure_run
-## 			self.static = self.secure_static
-## 		else:
-## 			self.run = self.insecure_run
-## 			self.static = self.insecure_static
-
-## 	def secure_static(self):
-## 		pass
-
-## 	def insecure_static(self):
-## 		pass
-
-## 	def secure_run(self):
-## 		"""
-
-## 		* Override this for secure parts of your application.
-## 		self.authorized is guaranteed to be True and
-## 		self.userid is guaranteed to contain a valid user id
-## 		"""
-## 		pass
-
-## 	def insecure_run(self):
-## 		pass
-

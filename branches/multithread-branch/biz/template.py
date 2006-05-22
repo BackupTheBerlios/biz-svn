@@ -21,12 +21,17 @@
 import re
 from collections import deque
 
+from biz.errors import FileNotFoundError
+
+class TemplateNotFoundError(FileNotFoundError):
+	pass
+
 
 class Parser:
-	beginline = re.compile(r"(.*(\{%){0})(\{%)(.*)")
-	endline = re.compile(r"^\s*(%\})(.*)")
-	onelinerline = re.compile(r"(.*)(\{%){0}(\{%)(.*)(%\}){0}(%\})(.*)")
-	chainedline = re.compile(r"^\s*(%\})(.*)(\{%)\s*$")
+	beginline = re.compile(r"^\s*\{%(.*)")
+	endline = re.compile(r"^\s*%\}\s*$")
+	onelinerline = re.compile(r"^\s*\{%(.*)%\}\s*$")
+	chainedline = re.compile(r"^\s*%\}(.*)\{%\s*$")
 	
 	TEXT, HEADER, END, CHAIN, ONELINER = \
 		"text", "header", "end", "chain", "oneliner"
@@ -40,33 +45,20 @@ class Parser:
 		self.items = []
 
 	def handle_header(self, groups):
-		text, none_, symb, code = groups		
-		if text:
-			self.items.append((self.TEXT,text))
-		
+		code, = groups
 		self.items.append((self.HEADER,code.strip()))
 		
 	def handle_end(self, groups):
-		symb, text = groups		
 		self.items.append((self.END,None))
-		if text:
-			self.items.append((self.TEXT,"%s\n" % text))
 			
 	def handle_chain(self, groups):
-		symb1, code, symb2 = groups		
+		code, = groups		
 		self.items.append((self.CHAIN,code.strip()))
 		
 	def handle_oneliner(self, groups):
-		print "oneliner", groups
-		btext, none1, symb1, code, none2, symb2, atext = groups
-		
-		if btext:
-			self.items.append((self.TEXT,btext))
+		code, = groups
 		
 		self.items.append((self.ONELINER,code.strip()))
-		
-		if atext:
-			self.items.append((self.TEXT,"%s\n" % atext))
 		
 	def handle_text(self, text):
 		self.items.append((self.TEXT,"".join(text)))
@@ -87,11 +79,15 @@ class Parser:
 					getattr(self, "handle_%s" % handler)(r.groups())
 					break
 			else:
-				self.handle_text(r"%s\n" % line)
+				text += "%s\n" % line
+		
+		if text:
+			self.handle_text(text)
+			text = []
 
 
 class Template:
-	variable = re.compile(r"\$[{]?(\w+)[}]?")
+	variable = re.compile(r"\$[{]?([a-zA-Z][\w.]*)[}]?")
 
 	def __init__(self, tmpl):
 		self.levels = deque()
@@ -103,7 +99,8 @@ class Template:
 		self.changed = True
 		
 		def emitter(*args):
-			self._outlist.extend([str(a) for a in args])			
+			self._outlist.extend([str(a) for a in args])
+			
 		self.variables["__emit"] = emitter
 		
 		parser = Parser()
@@ -115,7 +112,7 @@ class Template:
 			self._outlist = []
 			code = "\n".join(self.walk())
 			namespace = self.variables.copy()
-	
+			
 			exec code in namespace
 			self.output = "".join(self._outlist)
 			
@@ -131,11 +128,11 @@ class Template:
 		
 	@staticmethod
 	def from_file(filename):
-		f = file(filename)
 		try:
+			f = file(filename)
 			return Template(f.read())
-		finally:
-			f.close()
+		except IOError, e:
+			raise TemplateNotFoundError("filename", msg=e)
 		
 	@staticmethod
 	def from_parsed(parsed):
@@ -170,7 +167,7 @@ class Template:
 		if value.startswith("#"):
 			return (level,"")
 			
-		return (level,"%s__emit(%s)" % ("\t"*level,value))
+		return (level,"%s%s" % ("\t"*level,value))
 		
 	def handle_text(self, value, level):
 		def q(i, v):
@@ -195,30 +192,35 @@ class Template:
 
 
 if __name__ == "__main__":
-	test = """
+	test = r"""
 <html>
-<body>
-{% for name, age in people.iteritems()
-<tr>
-<td>${name}</td>
-before text {% if age > 10
-<td>${age}</td>
-ifififi
-%} elif age > 5 {%
-<td>young</td>
-elelel
-%} else {%
-<td>very young</td>
-%} after text
-</tr>
-%}
-before oneliner {% 2*2 %} after oneliner
-${age}
-{% # this is supposed to be a comment %}
-</body>
+	<body>
+		<table>
+		{% for name, age in people.iteritems()
+			<tr>
+				<td>$name</td><td>$age</td>
+				{% if age > 60
+					<td>old</td>
+				%} elif age > 30 {%
+					<td>not old</td>
+				%} elif age > 20 {%
+					<td>young</td>
+				%} elif age > 15 {%
+					<td>teen</td>
+				%} elif age > 10 {%
+					<td>very young</td>
+				%} elif age > 5 {%
+					<td>kiddo</td>
+				%} else {%
+					<td>baby</td>
+				%}
+			</tr>
+		%}
+		</table>
+		{% 'oneliner\n' %}
+	</body>
 </html>
 """
-
 	template = Template(test)
-	template["people"] = dict(yuce=27, gugu=24)
+	template["people"] = dict(gugu=24, aliyanki=13)
 	print str(template)
