@@ -1,93 +1,94 @@
 # vfolder_app.py
 
+import sys  # REMOVE
 import os
 import os.path
 import glob
 import mimetypes
 
-from biz.app import Application
-from biz.content import TextContent, HtmlContent, FileContent
+from biz import *
+from biz.template import Template
+
 
 class VirtualFolder(Application):
-	"""	environ["virtualfolder.location"] should point to the
-	preferred starting directory
-	environ["virtualfolder.wildcard"] may contain the wildcard
-	(default: *).
 	"""
+	* vfolder.location should point to the preferred starting directory
+	* vfolder.wildcard may contain the wildcard (default: *).
+	* vfolder.template may point to the template (default: apps/vfolder/vfolder.tmpl)
+	"""
+	class NamedLocation:
+		def __init__(self, path, xname, name, applocation):
+			tail = os.path.split(name)[1]
+			self.href = os.path.join("/"+xname, path[len(applocation):], tail)
+			self.name = tail
+			
 	def static(self):
-		self.location = self.options.get("vfolder.location", "")
+		self.location = self.options.main.get("vfolder.location", "")
 		assert self.location, \
-				"virtualfolder.location should be set"
+				"vfolder.location should be set"
 
 		if not self.location.endswith("/"):
 			self.location += "/"
 			
-		self.wildcard = self.options.get("vfolder.wildcard", "*")
+		self.wildcard = self.options.main.get("vfolder.wildcard", "*")
 		self.mime_handlers = {}
 		
-	def run(self):
-		path_items = self.args
-
-		##if not path_items:  # registered as index handler or error on /
-		##    path = ""
-		##    self.name = ""
-		##elif not self.environ.has_key("biz.error.code"):  # normal condition
-		path = "/".join(path_items[1:])
-		self.name = path_items[0]
-		##else:  # registered as error handler
-		##    path = "/".join(path_items)
-		##    self.name = ""
-
-		newpath = os.path.join(self.location, path)
-
-		if os.path.isfile(newpath):
-			self.handle_file(newpath)
-
-		elif os.path.isdir(newpath):
-			try:
-				thelist = glob.glob(os.path.join(newpath, self.wildcard))
-			except OSError:
-				self.code = 404
-				self.content = HtmlContent('<p style="color: red">Directory not found</p>')
-				return
-	
-			dirs = sorted([x for x in thelist if os.path.isdir(x)])
-			files = sorted([x for x in thelist if os.path.isfile(x)])
-
-			for index in [os.path.join(newpath, "index.htm"), os.path.join(newpath, "index.html")]:
-				if index in files:
-					self.handle_file(index)
-
-			page = "\n".join(["<html><head><title>Browsing: /%s</title></head><body><ul>" % path,
-					"<b>Directories</b>",
-					"\n".join([self.__fformat(newpath, x, True) for x in dirs]),
-					"<b>Files</b>",
-					"\n".join([self.__fformat(newpath, x, True) for x in files]),
-					"</ul></body></html>"])
+		templ = self.options.main.get("vfolder.template",
+					os.path.join(os.path.dirname(__file__), "vfolder.tmpl"))
+		self.template = Template.from_file(templ)
+		
+	class Handler(ArgHandler):
+		def dynamic(self):
+			parent = self.parent
+			path = self.request.path
+			pathstr = "/".join(path.args)
+			name = os.path.join(path.scriptname.strip("/"), "/".join(path.prevargs))
+			newpath = os.path.join(parent.location, pathstr)
 			
-			self.content = HtmlContent(page)
+			if os.path.isfile(newpath):
+				self.response.content = parent.handle_file(newpath)
+	
+			elif os.path.isdir(newpath):
+				try:
+					thelist = glob.glob(os.path.join(newpath, parent.wildcard))
+				except OSError:
+					self.response.code = 404
+					self.response.content = HtmlContent('<p style="color: red">Directory not found</p>')
+					return
+		
+				dirs = sorted([x for x in thelist if os.path.isdir(x)])
+				files = sorted([x for x in thelist if os.path.isfile(x)])
 
-		elif not os.path.exists(newpath):
-			self.code = 404
-			self.content = TextContent("File not found")
-		else:
-			self.code = 500
-			self.content = TextContent("error")
+				# not displaying the index correctly (\n 's and \t) because of
+				# FileContent; so disabled for now...
+## 				for index in [os.path.join(newpath, "index.htm"), os.path.join(newpath, "index.html")]:
+## 					if index in files:
+## 						self.response.content = self.app.handle_file(index)
+## 						return
 
-	def __fformat(self, path, name, isdir):
-		tail = os.path.split(name)[1]
-		href = os.path.join("/"+self.name, path[len(self.location):], tail)
-		if isdir:
-			return '<li><a href="%s">%s</a></li>' % (href,tail)
-		else:
-			return "<li>%s</li>" % tail
+				template = parent.template.copy(True)
+				template["title"] = "Browsing: /%s" % pathstr
+				template["header"] = "Browsing: /%s" % pathstr
+				template["label_dirs"] = "Directories"
+				template["label_files"] = "Files"
+				template["dirs"] = [parent.NamedLocation(newpath, name, x, parent.location) for x in dirs]
+				template["files"] = [parent.NamedLocation(newpath, name, x, parent.location) for x in files]
+				
+				self.response.content = HtmlContent(str(template))
+	
+			elif not os.path.exists(newpath):
+				self.response.code = 404
+				self.response.content = TextContent("File not found")
+			else:
+				self.response.code = 500
+				self.response.content = TextContent("error")
 
 	def handle_file(self, fname):
 		mime_type = mimetypes.guess_type(fname)[0] or "application/octet-stream"
 		try:
-			self.content = self.mime_handlers[mime_type](fname)
+			return self.mime_handlers[mime_type](fname)
 		except KeyError:
-			self.content=FileContent(fname, mime_type)
+			return FileContent(fname, mime_type)
 
 	def add_handler(self, mime_type, function):
 		self.mime_handlers[mime_type] = function
@@ -105,25 +106,25 @@ def python_handler(fname):
 def source_handler(fname):
 	return FileContent(fname, "text/plain")
 
-def zip_handler(fname):
-	import zipfile
+## def zip_handler(fname):
+## 	import zipfile
 
-	try:
-		f = zipfile.ZipFile(fname)
-	except IOError:
-		return TextContent("File error")
+## 	try:
+## 		f = zipfile.ZipFile(fname)
+## 	except IOError:
+## 		return TextContent("File error")
 
-	page = "\n".join(["<html><head><title>Browsing Inside: %s</title></head>" % os.path.split(fname)[1],
-						"<body><ul>",
-						"\n".join(["<li>%s</li>" % n for n in f.namelist()]),
-						"</ul></body></html>"])
-						
-	return HtmlContent(page)
+## 	page = "\n".join(["<html><head><title>Browsing Inside: %s</title></head>" % os.path.split(fname)[1],
+## 						"<body><ul>",
+## 						"\n".join(["<li>%s</li>" % n for n in f.namelist()]),
+## 						"</ul></body></html>"])
+## 						
+## 	return HtmlContent(page)
 
 def load(xenviron):
 	vfolder = VirtualFolder(xenviron)
 	vfolder.add_handler("text/x-python", python_handler)
-	vfolder.add_handler("application/zip", zip_handler)
+##	vfolder.add_handler("application/zip", zip_handler)
 	
 	for m in ["text/x-csrc", "text/x-chdr", "text/x-c++src", "text/x-c++hdr"]:
 		vfolder.add_handler(m, source_handler)

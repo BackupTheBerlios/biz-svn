@@ -275,7 +275,7 @@ class BaseHandler:
 		return [self.error_body]    
 
 	# Pure abstract methods; *must* be overridden in subclasses
-    
+
 	def _write(self,data):
 		"""Override in subclass to buffer data for send to client
 
@@ -348,7 +348,7 @@ class SimpleHandler(BaseHandler):
 
 
 class BaseCGIHandler(SimpleHandler):
-    
+
 	"""CGI-like systems using input/output/error streams and environ mapping
 
 	Usage::

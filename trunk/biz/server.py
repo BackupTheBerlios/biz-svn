@@ -1,24 +1,15 @@
 # server.py -- BizServer
 # Based on P. J. Eby's simple_server.py
 
-"""BaseHTTPServer that implements the Python WSGI protocol (PEP 333, rev 1.21)
-
-This is both an example of how WSGI can be implemented, and a basis for running
-simple web applications on a local machine, such as might be done when testing
-or debugging an application.  It has not been reviewed for security issues,
-however, and we strongly recommend that you use a "real" web server for
-production use.
-
-For example usage, see the 'if __name__=="__main__"' block at the end of the
-module.  See also the BaseHTTPServer module docs for other API information.
-"""
-
+import time
+import thread
 from optparse import OptionParser
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+import SocketServer
 import urllib, sys
 from handlers import SimpleHandler
 
-__version__ = "0.1"
+__version__ = "0.2"
 __all__ = ['BizWSGIServer','BizWSGIRequestHandler']
 
 
@@ -64,6 +55,10 @@ class BizWSGIServer(HTTPServer):
 
 	def set_app(self,application):
 		self.application = application
+
+
+class BizMultithreadWSGIServer(SocketServer.ThreadingMixIn, BizWSGIServer):
+	pass
 
 
 class BizWSGIRequestHandler(BaseHTTPRequestHandler):
@@ -120,6 +115,7 @@ class BizWSGIRequestHandler(BaseHTTPRequestHandler):
 			self.rfile, self.wfile, self.get_stderr(), self.get_environ()
 		)
 		handler.request_handler = self      # backpointer for logging
+		
 		handler.run(self.server.get_app())
 
 
@@ -130,19 +126,25 @@ def run(root):
 			help="specify server address (default: localhost)")
 	op.add_option("-p", "--port", dest="port", default="8000",
 			help="specify server port (default: 8000)")
-	op.add_option("-c", "--count", dest="count", default="0",
+	op.add_option("-c", "--count", dest="count", default=0,
 			help="specify number of requests to handle (default: run forever)")
+	op.add_option("-m", "--multithread", action="store_true", default=False,
+			help="run the server multithreaded")
 	
 	ops, args = op.parse_args()
 
 	address = (ops.address, int(ops.port))
 	count = int(ops.count)
-
-	httpd = BizWSGIServer(address, BizWSGIRequestHandler)
+	
+	if ops.multithread:
+		httpd = BizMultithreadWSGIServer(address, BizWSGIRequestHandler)
+	else:
+		httpd = BizWSGIServer(address, BizWSGIRequestHandler)
+		
 	httpd.set_app(root)
 	sa = httpd.socket.getsockname()
-
-	print "Serving HTTP on", sa[0], "port", sa[1], "..."
+	
+	print "Serving HTTP on", sa[0], "port", sa[1], "multithread=%d" % ops.multithread, "..."
 	try:
 		if count:
 			for i in range(count):
@@ -153,9 +155,4 @@ def run(root):
 
 	except KeyboardInterrupt:
 		pass
-##
-##if __name__ == '__main__':
-##    main()
-
-
 

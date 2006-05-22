@@ -27,9 +27,10 @@ from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 from Cookie import SimpleCookie
 import urllib
 from cgi import FieldStorage
+import threading
 
 from biz.app import Application
-from biz.utility import Struct
+from biz.utility import Struct, Heads
 from biz.content import TextContent
 from biz.response import Response
 from biz.session import SessionManager, SessionError
@@ -37,15 +38,16 @@ from biz.errors import *
 
 __all__ = ["Root"]
 
-## def _(s):  # TODO: Replace this with a true i18n function
-## 	return s
+sessionman_lock = threading.Lock()
+applist_lock = threading.Lock()
 
 import gettext
-try:
-	_ = gettext.translation("messages", "/home/yuce/prj/biz/biz/locale").ugettext # XXX
-except:
-	print _(u"Locale not found")
-	_ = lambda s: s
+## try:
+## 	_ = gettext.translation("messages", "/home/yuce/prj/biz/biz/locale").ugettext # XXX
+## except:
+## 	print _(u"Locale not found")
+
+_ = lambda s: s
 
 
 class ApplicationInfo(object):
@@ -79,17 +81,26 @@ class ApplicationInfo(object):
 		if len(sections) < 1:
 			raise ImproperConfigFileError(self.cpath,
 					_(u"%s should have at least one section" % self.cpath))
+					
+		options = Struct()
+		options.main = mainsect = dict(cfg.items("main"))
+		options.sections = sections
+			
+## 		if not(options.has_key("module") ^ options.has_key("path")):
+## 			raise ImproperConfigFileError(self.cpath,
+## 					_(u"%s should have a ``module`` or ``path`` option, but not both" % self.cpath))
 
-		options = dict(cfg.items(sections[0]))
-
-		if not(options.has_key("module") ^ options.has_key("path")):
+		if not(mainsect.has_key("module") ^ mainsect.has_key("path")):
 			raise ImproperConfigFileError(self.cpath,
 					_(u"%s should have a ``module`` or ``path`` option, but not both" % self.cpath))
+					
+		for sectname in sections[1:]:
+			options[sectname] = dict(cfg.items(sectname))
 
-		self.hotplug = options.get("hotplug", False)
-		self.module = options.get("module", None)
-		self.mpath = options.get("path", "")
-		self.class_ = options.get("class", "")
+		self.hotplug = mainsect.get("hotplug", False)
+		self.module = mainsect.get("module", None)
+		self.mpath = mainsect.get("path", "")
+		self.class_ = mainsect.get("class", "")
 
 		return options
 
@@ -109,9 +120,14 @@ class ApplicationInfo(object):
 			else:
 				try:
 					m = __import__(self.module, None, None, ["load"])
+				except ImportError, e:
+					print "Import error:", e
+				try:
 					self.body = m.load(xenviron)
-				except ImportError:
-					raise NoApplicationExistsError(self.module, source=self.cpath)
+## 				except (ImportError,AttributeError):
+				except AttributeError, e:
+					print "Attr error:", e
+## 					raise NoApplicationExistsError(self.module, source=self.cpath)
 
 		else:
 			self.mtime = os.stat(self.mpath).st_mtime
@@ -121,17 +137,24 @@ class ApplicationInfo(object):
 					*imp.find_module(modname, [path]))
 
 			if self.class_:
-				self.body = m.__getattribute__(self.class_)(xenviron)
+				try:
+					self.body = m.__getattribute__(self.class_)(xenviron)
+				except AttributeError, e:
+					raise ApplicationNotFoundInModuleError(self.class_,
+						where=self.mpath, source="root", msg=e)
 			else:
 				try:
 					self.body = m.load(xenviron)
-				except AttributeError:
-					for v in m.__dict__.itervalues():
-						if issubclass(v, Application):
-							self.body = v(xenviron)
-							break
-					else:
-						raise NoApplicationExistsError(path, source=self.cpath)
+				except AttributeError, e:
+##					for v in m.__dict__.itervalues():
+## 						try:
+## 							if issubclass(v, Application):
+## 								self.body = v(xenviron)
+## 								break
+## 						except TypeError:
+## 							pass
+## 					else:
+					raise NoApplicationExistsError(path, source=self.cpath, msg=e)
 
 	def unload(self):
 		self.body = None
@@ -155,13 +178,17 @@ class ApplicationInfo(object):
 
 	def __call__(self, xenviron):
 		if not self.body or self._is_modified():
-			self._reload(xenviron)
+			try:
+				applist_lock.acquire()
+				self._reload(xenviron)
+			finally:
+				applist_lock.release()
 
 		return self
 		
 
 class Root:
-	def __init__(self):
+	def __init__(self, meltscriptname=False):
 		self._applist = {}  # all apps
 		self._index = None  # index app
 		self._error = None
@@ -169,6 +196,7 @@ class Root:
 		self.start_response = None
 		self.sessionman = SessionManager()
 		self.debug = False
+		self.meltscriptname = meltscriptname
 
 	def register_app(self, name, cpath):
 		if name not in self._applist:
@@ -180,13 +208,19 @@ class Root:
 	def register_error(self, name, cpath):
 		self._error = ApplicationInfo(name, cpath=cpath)
 
-	def _default_index(self):
-		page = TextContent(_(u"Index method is left out."))
-		return self._prepare_response(Response(200, page))
+	def _default_index(self, start_response):
+		response = Struct()
+		response.content = TextContent(_(u"Index method is left out"))
+		response.code = 404
+		response.heads = Heads()
+		return self._prepare_response(start_response, Response(response))
 		
-	def _default_error(self, code, message):
-		page = TextContent(message)
-		return self._prepare_response(Response(code, page))
+	def _default_error(self, start_response, code, message):
+		response = Struct()
+		response.content = TextContent(message)
+		response.code = code
+		response.heads = Heads()
+		return self._prepare_response(start_response, Response(response))
 
 	def __call__(self, environ, start_response):
 		return self.run(environ, start_response)
@@ -198,14 +232,21 @@ class Root:
 				l.append(True)
 			return tuple(l)
 
-		self.environ = environ
-		self.start_response = start_response
-
 		try:	
 			path_info = urllib.unquote_plus(environ["PATH_INFO"])
 		except KeyError:
-			raise WSGIKeyNotPresentError("PATH_INFO")
-
+			path_info = ""
+		
+		if not self.meltscriptname:
+			try:
+				path_info = "%s%s" %(environ["SCRIPT_NAME"],path_info)
+			except KeyError:
+				raise WSGIKeyNotPresentError("SCRIPT_NAME", source="root.py")
+			
+		xenviron = Struct()
+		xenviron.path = Struct()
+		xenviron.path.endswithslash = path_info.endswith("/")			
+			
 		path = [p for p in path_info.split("/") if p] or [""]
 		if "QUERY_STRING" in environ:
 			query_string = urllib.unquote_plus(environ["QUERY_STRING"])
@@ -214,32 +255,48 @@ class Root:
 			params = {}
 
 		# a dirty little trick to deny FieldStorage to use QUERY_STRING
-		self.environ["QUERY_STRING"] = ""
+		environ["QUERY_STRING"] = ""
 
-		xenviron = Struct()
-		xenviron.args = path
-		xenviron.kwargs = params
+		if self.meltscriptname:
+			try:
+				xenviron.path.args = path
+				xenviron.path.scriptname = environ["SCRIPT_NAME"]
+			except KeyError:
+				raise WSGIKeyNotPresentError("SCRIPT_NAME")
+		else:
+			xenviron.path.args = path
+			xenviron.path.scriptname = ""
+		
+		xenviron.path.kwargs = params
 		try:
-			xenviron.fields = FieldStorage(environ=self.environ,
-					fp=self.environ["wsgi.input"])
+			xenviron.fields = FieldStorage(environ=environ,
+						fp=environ["wsgi.input"])
 		except KeyError:
 			raise WSGIKeyNotPresentError("wsgi.input")
+			
 		xenviron.cookies = SimpleCookie(environ.get("HTTP_COOKIE", ""))
 
 		try:
-			xenviron.cookies, xenviron.session = self.sessionman.get_session(xenviron.cookies)
-		except SessionError:
-			xenviron.session = self.sessionman.new_session()
+			sessionman_lock.acquire()
+			try:
+				xenviron.cookies, xenviron.session = self.sessionman.get_session(xenviron.cookies)
+			except SessionError:
+				xenviron.session = self.sessionman.new_session()
+		finally:
+			sessionman_lock.release()
+			
+		appname = path[0]
 
-		if not path[0]:
+		if not appname:
 			if not self._index:
-				return self._default_index()
+				return self._default_index(start_response)
 
 			app = self._index(xenviron)
 		else:
 			try:
-				name = path[0]
+				name = appname
 				app = self._applist[name](xenviron)
+				
 			except KeyError:
 				xenviron.error_code = 404
 				xenviron.error_message = _(u"Method not found")
@@ -247,27 +304,23 @@ class Root:
 				if self._error:
 					app = self._error(xenviron)
 				else:
-					return self._default_error(xenviron.error_code, 
+					return self._default_error(start_response, xenviron.error_code, 
 							xenviron.error_message)
-
-		app.body.refresh(xenviron)
-		app.body.run()
-		app_xenviron, response = app.body.get()
+							
+		response = app.body(xenviron)
 		
-		# further process the app_xenviron
-		self.sessionman.update(app_xenviron.session)
+		try:
+			sessionman_lock.acquire()
+			# further process the app_xenviron
+			self.sessionman.update(response.session)
+		finally:
+			sessionman_lock.release()
 
-		# return preparations
-		cookies = SimpleCookie()
-		cookies.update(app_xenviron.cookies)
-		cookies.update(app_xenviron.session.sidcookie)
-		cookies = str(cookies).split()[1]
-		response.heads.set_cookie = cookies
-		return self._prepare_response(response)
+		return self._prepare_response(start_response, Response(response))
 
-	def _prepare_response(self, response):
+	def _prepare_response(self, start_response, response):
 		rc, rh, ct = response.get_forwsgi()
-		self.start_response(rc, rh)
+		start_response(rc, rh)
 
 		return ct
 

@@ -1,6 +1,7 @@
 
 include gpl.txt
 include CHANGES
+include VERSION
 recursive-include doc *
 recursive-include templates *.tmpl
 recursive-include bin *

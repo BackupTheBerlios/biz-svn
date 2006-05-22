@@ -23,32 +23,77 @@ from biz.utility import Struct, Heads
 
 from biz.content import TextContent, EmptyContent
 
-__all__ = ["Application", "SecureApplication"]
+__all__ = ["ArgHandler", "CompositeArgHandler",
+			"Application", "StaticApplication"] ##, "SecureApplication"]
 
+
+# TODO: Needs i18n here
 _ = lambda s: s
+	
 
+class ArgHandler:
+	def __init__(self, parent, **kwargs):
+		self.parent = parent
+		self.options = kwargs
+		self.response = Struct()
+		self.response.content = TextContent(_(u"handler default"))
+		self.response.code = 200
+		self.response.heads = Heads()
+		
+	def __call__(self, request):
+		self.request = request
+		self.response.session = request.session
+		self.response.cookies = request.cookies
+		
+		try:
+			self.dynamic()
+		except Exception, e:
+			print e
+			raise e
+		
+		return self.response
+		
+	def dynamic(self):
+		"""
+		This method is called on each call.
+		* Override this
+		* Put dynamic content here
+		"""
+		pass
+		
+	def redirect(self, location, permanent=False):
+		if permanent:
+			self.response.code = 301
+		else:
+			self.response.code = 307
+		self.response.heads.location = location
+		self.response.content = EmptyContent()
+		
+		
+class CompositeArgHandler(ArgHandler):
+	def __call__(self, request):
+		args = request.path.args
+		try:
+			# XXX: Need validation here for request.args[1]
+			handler = getattr(self, "%sHandler" % args[0])(self)
+			request.path.prevargs = request.path.prevargs + [args[0]]  # /app[0]/handler1[1]/param1[2]/...
+			request.path.args = args[1:]
+				
+			return handler(request)
+			
+		except (IndexError, AttributeError):
+			return self.__handle(request)
+			
+	def __handle(self, request):
+		return ArgHandler.__call__(self, request)
+		
 
 class Application:
 	def __init__(self, xenviron):
 		self.options = xenviron.options
-		self.content = TextContent(_(u"application default"))
-
-		self.refresh(xenviron)
+		self.name = xenviron.path.args[0]
+		self.scriptname = xenviron.path.scriptname
 		self.static()
-
-	def refresh(self, xenviron):
-		"""prepare the application to run
-
-		* Extend this method, if you require custom preparation
-		"""
-		self.args = xenviron.args
-		self.kwargs = xenviron.kwargs
-		self.session = xenviron.session
-		self.cookies = xenviron.cookies
-		self.fields = xenviron.fields
-
-		self.code = 200
-		self.heads = Heads()
 
 	def static(self):
 		"""prepare static content
@@ -57,61 +102,41 @@ class Application:
 		"""
 		pass
 
-	def run(self):
-		"""execute the application
-
-		* Override this method for dynamic/semi-dynamic content
-		* You should supply self.content here with your content,
-		* Optionally you may supply self.rcode and/or
-		self.rheads
-		"""
-		pass
-
-	def get(self):
-		xenviron = Struct()  # FUTURE
-		xenviron.cookies = self.cookies
-		xenviron.session = self.session
-		return (xenviron,Response(self.code, self.content, **self.heads._getdict()))
-
-	def redirect(self, location):
-		self.code = 307
-		self.heads.location = location
-		self.content = EmptyContent()
-
-
-class SecureApplication(Application):
-	def refresh(self, xenviron):
-		Application.refresh(self, xenviron)
-
+	def __call__(self, request):
+		args = request.path.args
 		try:
-			self.authenticated = self.session.authenticated
-			self.userid = self.session.userid
-		except:
-			self.authenticated = False
-			self.userid = None
+			# XXX: Need validation here for request.args[1]
+			handler = getattr(self, "%sHandler" % args[1])(self)
+			request.path.prevargs = args[:2]  # /app[0]/handler1[1]/param1[2]/...
+			request.path.args = args[2:]
+		except (IndexError, AttributeError):
+			handler = self.Handler(self)
+			request.path.prevargs = [args[0]]
+			request.path.args = args[1:]
+			
+		return handler(request)
 
-		if self.authenticated:
-			self.run = self.secure_run
-			self.static = self.secure_static
-		else:
-			self.run = self.insecure_run
-			self.static = self.insecure_static
+	class Handler(ArgHandler):
+		def dynamic(self):
+			self.code = 404
+			self.response.content = TextContent(_(u"%s not found") % \
+							self.request.path.args)
 
-	def secure_static(self):
+
+class StaticApplication:
+	def __init__(self, xenviron):
+		self.options = xenviron.options
+		self.response = Struct()
+		self.response.content = TextContent(_(u"application default"))
+		self.response.session = xenviron.session
+		self.response.cookies = xenviron.cookies
+		self.response.heads = Heads()
+		
+		self.static()
+		
+	def static(self):
 		pass
-
-	def insecure_static(self):
-		pass
-
-	def secure_run(self):
-		"""
-
-		* Override this for secure parts of your application.
-		self.authorized is guaranteed to be True and
-		self.userid is guaranteed to contain a valid user id
-		"""
-		pass
-
-	def insecure_run(self):
-		pass
-
+		
+	def __call__(self, request):
+		return self.response
+		

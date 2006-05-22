@@ -29,9 +29,9 @@ for opt in valid_options:
 	if opt in sys.argv:
 		pack()
 		break
-
+		
 setup(name="biz",
-		version="0.0.4",
+		version="0.0.14",
 		url="http://biz.berlios.de",
 		download_url="http://developer.berlios.de/project/showfiles.php?group_id=6616",
 		author="Yuce Tekol",
