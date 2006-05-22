@@ -32,8 +32,9 @@ _ = lambda s: s
 	
 
 class ArgHandler:
-	def __init__(self, app):
-		self.app = app
+	def __init__(self, parent, **kwargs):
+		self.parent = parent
+		self.options = kwargs
 		self.response = Struct()
 		self.response.content = TextContent(_(u"handler default"))
 		self.response.code = 200
@@ -44,7 +45,11 @@ class ArgHandler:
 		self.response.session = request.session
 		self.response.cookies = request.cookies
 		
-		self.dynamic()
+		try:
+			self.dynamic()
+		except Exception, e:
+			print e
+			raise e
 		
 		return self.response
 		
@@ -104,7 +109,6 @@ class Application:
 			handler = getattr(self, "%sHandler" % args[1])(self)
 			request.path.prevargs = args[:2]  # /app[0]/handler1[1]/param1[2]/...
 			request.path.args = args[2:]
-							
 		except (IndexError, AttributeError):
 			handler = self.Handler(self)
 			request.path.prevargs = [args[0]]
@@ -114,7 +118,9 @@ class Application:
 
 	class Handler(ArgHandler):
 		def dynamic(self):
-			self.response.content = TextContent(_(u"application default"))
+			self.code = 404
+			self.response.content = TextContent(_(u"%s not found") % \
+							self.request.path.args)
 
 
 class StaticApplication:

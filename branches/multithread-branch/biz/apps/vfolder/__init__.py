@@ -39,17 +39,18 @@ class VirtualFolder(Application):
 		
 	class Handler(ArgHandler):
 		def dynamic(self):
+			parent = self.parent
 			path = self.request.path
 			pathstr = "/".join(path.args)
 			name = os.path.join(path.scriptname.strip("/"), "/".join(path.prevargs))
-			newpath = os.path.join(self.app.location, pathstr)
+			newpath = os.path.join(parent.location, pathstr)
 			
 			if os.path.isfile(newpath):
-				self.response.content = self.app.handle_file(newpath)
+				self.response.content = parent.handle_file(newpath)
 	
 			elif os.path.isdir(newpath):
 				try:
-					thelist = glob.glob(os.path.join(newpath, self.app.wildcard))
+					thelist = glob.glob(os.path.join(newpath, parent.wildcard))
 				except OSError:
 					self.response.code = 404
 					self.response.content = HtmlContent('<p style="color: red">Directory not found</p>')
@@ -65,13 +66,13 @@ class VirtualFolder(Application):
 ## 						self.response.content = self.app.handle_file(index)
 ## 						return
 
-				template = self.app.template.copy(True)
+				template = parent.template.copy(True)
 				template["title"] = "Browsing: /%s" % pathstr
 				template["header"] = "Browsing: /%s" % pathstr
 				template["label_dirs"] = "Directories"
 				template["label_files"] = "Files"
-				template["dirs"] = [self.app.NamedLocation(newpath, name, x, self.app.location) for x in dirs]
-				template["files"] = [self.app.NamedLocation(newpath, name, x, self.app.location) for x in files]
+				template["dirs"] = [parent.NamedLocation(newpath, name, x, parent.location) for x in dirs]
+				template["files"] = [parent.NamedLocation(newpath, name, x, parent.location) for x in files]
 				
 				self.response.content = HtmlContent(str(template))
 	

@@ -11,18 +11,18 @@
 		{% if dirs
 			<h2>$label_dirs</h2>
 			<ul>
-				{% for d in dirs
+			{% for d in dirs
 				<li><a href="$d.href">$d.name</a></li>
-				%}
+			%}
 			</ul>
 		%}
 		
 		{% if files
 			<h2>$label_files</h2>
 			<ul>
-				{% for f in files
+			{% for f in files
 				<li><a href="$f.href">$f.name</a></li>
-				%}
+			%}
 			</ul>
 		%}
 	</body>

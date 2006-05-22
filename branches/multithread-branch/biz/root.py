@@ -83,9 +83,9 @@ class ApplicationInfo(object):
 					_(u"%s should have at least one section" % self.cpath))
 					
 		options = Struct()
-		options.main = mainsect = dict(cfg.items(sections[0]))
-		options.sections = sections[1:]
-
+		options.main = mainsect = dict(cfg.items("main"))
+		options.sections = sections
+			
 ## 		if not(options.has_key("module") ^ options.has_key("path")):
 ## 			raise ImproperConfigFileError(self.cpath,
 ## 					_(u"%s should have a ``module`` or ``path`` option, but not both" % self.cpath))
@@ -145,7 +145,7 @@ class ApplicationInfo(object):
 			else:
 				try:
 					self.body = m.load(xenviron)
-				except AttributeError:
+				except AttributeError, e:
 ##					for v in m.__dict__.itervalues():
 ## 						try:
 ## 							if issubclass(v, Application):
@@ -154,7 +154,7 @@ class ApplicationInfo(object):
 ## 						except TypeError:
 ## 							pass
 ## 					else:
-					raise NoApplicationExistsError(path, source=self.cpath)
+					raise NoApplicationExistsError(path, source=self.cpath, msg=e)
 
 	def unload(self):
 		self.body = None
