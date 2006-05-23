@@ -83,7 +83,10 @@ class ApplicationInfo(object):
 					_(u"%s should have at least one section" % self.cpath))
 					
 		options = Struct()
-		options.main = mainsect = dict(cfg.items("main"))
+		try:
+			options.main = mainsect = dict(cfg.items("main"))
+		except NoSectionError:
+			raise ImproperConfigFileError(self.cpath, source="root")
 		options.sections = sections
 			
 ## 		if not(options.has_key("module") ^ options.has_key("path")):

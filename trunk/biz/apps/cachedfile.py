@@ -5,14 +5,14 @@ import biz
 
 class CachedFileApp(biz.StaticApplication):
 	def static(self):
-		assert self.options.has_key("cachedfile.path"), \
+		assert self.options.main.has_key("cachedfile.path"), \
 			"cachedfile.path option is missing"
 			
-		assert self.options.has_key("cachedfile.type"), \
+		assert self.options.main.has_key("cachedfile.type"), \
 			"cachedfile.type option is missing"
 			
-		path = self.options["cachedfile.path"]
-		_type = self.options["cachedfile.type"]		
+		path = self.options.main["cachedfile.path"]
+		_type = self.options.main["cachedfile.type"]		
 			
 		try:
 			self.response.content = biz.CachedFileContent(path, _type)

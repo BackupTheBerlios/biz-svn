@@ -17,30 +17,38 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
-__all__ = ["RootError", "FileNotFoundError", "ImproperFileError",
+__all__ = ["BizError", "RootError", "FileNotFoundError", "ImproperFileError",
 			"RootEnvironmentError", "NoApplicationExistsError",
 			"ImproperConfigFileError", "ConfigFileNotFoundError",
 			"ModuleNotFoundError", "WSGIKeyNotPresentError",
-			"ApplicationNotFoundInModuleError"]
+			"ApplicationNotFoundInModuleError", "ApplicationError",
+			"ApplicationStaticError", "ApplicationDynamicError"]
 			
 
 def _(s):  # TODO: Replace this with a true i18n function
 	return s
+	
 
-
-class RootError(Exception):
+class BizError(Exception):
 	def __init__(self, what, msg=None, **kwargs):
 		"""
 		* what : item caused the error.
 		* msg : error message.
 		* info : a dict.
 		"""
-
 		Exception.__init__(self)
 		self.what = what
-		self.msg = msg or _("Root error: ``%(what)s``" % dict(what=what))
+		self.msg = msg or _("Biz error: ``%(what)s``" % dict(what=what))
 		self.info = kwargs
 		self.args = (self.msg,)
+
+
+class RootError(BizError):
+	def __init__(self, what, msg=None, **kwargs):
+		BizError.__init__(self, what,
+				msg or _("Root error: ``%(what)s``" % dict(what=what)),
+				**kwargs)
+		
 
 
 class FileNotFoundError(RootError):
@@ -127,3 +135,26 @@ class HTTPError(Exception):
 		self.code = code
 		self.msg = msg
 		self.args = (self.msg,)
+
+
+class ApplicationError(BizError):
+	def __init__(self, what, msg=None, **kwargs):
+		BizError.__init__(self, what,
+				msg or _("Application error: ``%(what)s``" % dict(what=what)),
+				**kwargs)
+
+
+class ApplicationStaticError(ApplicationError):
+	def __init__(self, what, msg=None, **kwargs):
+		ApplicationError.__init__(self, what,
+				msg or _("Application static() error: ``%(what)s``" % dict(what=what)),
+				**kwargs)
+				
+
+class ApplicationDynamicError(ApplicationError):
+	def __init__(self, what, where="", msg=None, **kwargs):
+		ApplicationError.__init__(self, what,
+				msg or _("Application dynamic() error: ``%(what)s`` in ``%(where)s`` [source: ``%(source)s``]" % \
+				dict(what=what, where=where, source=kwargs.get("source", _("UNKNOWN")))),
+				**kwargs)
+		

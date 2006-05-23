@@ -20,6 +20,7 @@
 
 from biz.response import Response
 from biz.utility import Struct, Heads
+from biz.errors import *
 
 from biz.content import TextContent, EmptyContent
 
@@ -29,11 +30,12 @@ __all__ = ["ArgHandler", "CompositeArgHandler",
 
 # TODO: Needs i18n here
 _ = lambda s: s
-	
+
 
 class ArgHandler:
-	def __init__(self, parent, **kwargs):
+	def __init__(self, parent, name, **kwargs):
 		self.parent = parent
+		self.name = name
 		self.options = kwargs
 		self.response = Struct()
 		self.response.content = TextContent(_(u"handler default"))
@@ -48,8 +50,7 @@ class ArgHandler:
 		try:
 			self.dynamic()
 		except Exception, e:
-			print e
-			raise e
+			raise ApplicationDynamicError(e, where=self.name, source=__file__)
 		
 		return self.response
 		
@@ -75,7 +76,7 @@ class CompositeArgHandler(ArgHandler):
 		args = request.path.args
 		try:
 			# XXX: Need validation here for request.args[1]
-			handler = getattr(self, "%sHandler" % args[0])(self)
+			handler = getattr(self, "%sHandler" % args[0])(self, "%sHandler" % args[0])
 			request.path.prevargs = request.path.prevargs + [args[0]]  # /app[0]/handler1[1]/param1[2]/...
 			request.path.args = args[1:]
 				
@@ -106,11 +107,11 @@ class Application:
 		args = request.path.args
 		try:
 			# XXX: Need validation here for request.args[1]
-			handler = getattr(self, "%sHandler" % args[1])(self)
+			handler = getattr(self, "%sHandler" % args[1])(self, "%sHandler" % args[1])
 			request.path.prevargs = args[:2]  # /app[0]/handler1[1]/param1[2]/...
 			request.path.args = args[2:]
 		except (IndexError, AttributeError):
-			handler = self.Handler(self)
+			handler = self.Handler(self, "Handler")
 			request.path.prevargs = [args[0]]
 			request.path.args = args[1:]
 			
