@@ -87,7 +87,9 @@ class ApplicationInfo(object):
 			options.main = mainsect = dict(cfg.items("main"))
 		except NoSectionError:
 			raise ImproperConfigFileError(self.cpath, source="root")
+			
 		options.sections = sections
+		options.sections.remove("main")
 			
 ## 		if not(options.has_key("module") ^ options.has_key("path")):
 ## 			raise ImproperConfigFileError(self.cpath,
@@ -97,7 +99,7 @@ class ApplicationInfo(object):
 			raise ImproperConfigFileError(self.cpath,
 					_(u"%s should have a ``module`` or ``path`` option, but not both" % self.cpath))
 					
-		for sectname in sections[1:]:
+		for sectname in sections:
 			options[sectname] = dict(cfg.items(sectname))
 
 		self.hotplug = mainsect.get("hotplug", False)

@@ -18,6 +18,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
+
 from biz.response import Response
 from biz.utility import Struct, Heads
 from biz.errors import *
@@ -36,7 +37,8 @@ class ArgHandler:
 	def __init__(self, parent, name, **kwargs):
 		self.parent = parent
 		self.name = name
-		self.options = kwargs
+## 		self.options = kwargs
+		self.__dict__.update(kwargs)
 		self.response = Struct()
 		self.response.content = TextContent(_(u"handler default"))
 		self.response.code = 200
@@ -50,7 +52,7 @@ class ArgHandler:
 		try:
 			self.dynamic()
 		except Exception, e:
-			raise ApplicationDynamicError(e, where=self.name, source=__file__)
+			raise ApplicationDynamicError(e.args, where=self.name, source=__file__)
 		
 		return self.response
 		
@@ -76,7 +78,7 @@ class CompositeArgHandler(ArgHandler):
 		args = request.path.args
 		try:
 			# XXX: Need validation here for request.args[1]
-			handler = getattr(self, "%sHandler" % args[0])(self, "%sHandler" % args[0])
+			handler = getattr(self, "%sHandler" % args[0])(self, "%sHandler" % args[0], g=self.g, p=self.p)
 			request.path.prevargs = request.path.prevargs + [args[0]]  # /app[0]/handler1[1]/param1[2]/...
 			request.path.args = args[1:]
 				
@@ -91,9 +93,10 @@ class CompositeArgHandler(ArgHandler):
 
 class Application:
 	def __init__(self, xenviron):
-		self.options = xenviron.options
 		self.name = xenviron.path.args[0]
-		self.scriptname = xenviron.path.scriptname
+		self.g = Struct()
+		self.g.options = xenviron.options
+		self.g.scriptname = xenviron.path.scriptname
 		self.static()
 
 	def static(self):
@@ -107,11 +110,12 @@ class Application:
 		args = request.path.args
 		try:
 			# XXX: Need validation here for request.args[1]
-			handler = getattr(self, "%sHandler" % args[1])(self, "%sHandler" % args[1])
+			handler = getattr(self, "%sHandler" % args[1])\
+					(self, "%sHandler" % args[1], g=self.g, p=Struct())
 			request.path.prevargs = args[:2]  # /app[0]/handler1[1]/param1[2]/...
 			request.path.args = args[2:]
 		except (IndexError, AttributeError):
-			handler = self.Handler(self, "Handler")
+			handler = self.Handler(self, "Handler", g=self.g)
 			request.path.prevargs = [args[0]]
 			request.path.args = args[1:]
 			

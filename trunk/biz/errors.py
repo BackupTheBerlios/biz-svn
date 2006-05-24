@@ -154,7 +154,7 @@ class ApplicationStaticError(ApplicationError):
 class ApplicationDynamicError(ApplicationError):
 	def __init__(self, what, where="", msg=None, **kwargs):
 		ApplicationError.__init__(self, what,
-				msg or _("Application dynamic() error: ``%(what)s`` in ``%(where)s`` [source: ``%(source)s``]" % \
+				msg or _("``%(what)s`` in ``%(where)s`` [source: ``%(source)s``]" % \
 				dict(what=what, where=where, source=kwargs.get("source", _("UNKNOWN")))),
 				**kwargs)
 		
