@@ -37,7 +37,6 @@ class ArgHandler:
 	def __init__(self, parent, name, **kwargs):
 		self.parent = parent
 		self.name = name
-## 		self.options = kwargs
 		self.__dict__.update(kwargs)
 		self.response = Struct()
 		self.response.content = TextContent(_(u"handler default"))
@@ -78,7 +77,7 @@ class CompositeArgHandler(ArgHandler):
 		args = request.path.args
 		try:
 			# XXX: Need validation here for request.args[1]
-			handler = getattr(self, "%sHandler" % args[0])(self, "%sHandler" % args[0], g=self.g, p=self.p)
+			handler = getattr(self, "%sHandler" % args[0])(self, "%sHandler" % args[0], q=self.q, p=self.p)
 			request.path.prevargs = request.path.prevargs + [args[0]]  # /app[0]/handler1[1]/param1[2]/...
 			request.path.args = args[1:]
 				
@@ -94,10 +93,13 @@ class CompositeArgHandler(ArgHandler):
 class Application:
 	def __init__(self, xenviron):
 		self.name = xenviron.path.args[0]
-		self.g = Struct()
-		self.g.options = xenviron.options
-		self.g.scriptname = xenviron.path.scriptname
-		self.static()
+		self.q = Struct()
+		self.q.options = xenviron.options
+		self.q.scriptname = xenviron.path.scriptname
+		try:
+			self.static()
+		except Exception, e:
+			raise ApplicationStaticError(e)
 
 	def static(self):
 		"""prepare static content
@@ -111,11 +113,11 @@ class Application:
 		try:
 			# XXX: Need validation here for request.args[1]
 			handler = getattr(self, "%sHandler" % args[1])\
-					(self, "%sHandler" % args[1], g=self.g, p=Struct())
+					(self, "%sHandler" % args[1], q=self.q, p=Struct())
 			request.path.prevargs = args[:2]  # /app[0]/handler1[1]/param1[2]/...
 			request.path.args = args[2:]
-		except (IndexError, AttributeError):
-			handler = self.Handler(self, "Handler", g=self.g)
+		except (IndexError, AttributeError):  # XXX: 
+			handler = self.Handler(self, "Handler", q=self.q)
 			request.path.prevargs = [args[0]]
 			request.path.args = args[1:]
 			

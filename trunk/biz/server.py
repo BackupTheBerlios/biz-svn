@@ -7,7 +7,7 @@ from optparse import OptionParser
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import SocketServer
 import urllib, sys
-from handlers import SimpleHandler
+from wsgihandlers import SimpleHandler
 
 __version__ = "0.2"
 __all__ = ['BizWSGIServer','BizWSGIRequestHandler']

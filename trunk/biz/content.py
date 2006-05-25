@@ -20,6 +20,7 @@
 
 import os
 from cStringIO import StringIO
+import mimetypes
 
 __all__ = ["EmptyContent", "TextContent", "HtmlContent", 
 			"FileContent", "CachedFileContent"]
@@ -72,7 +73,8 @@ class HtmlContent(TextContent):
 class FileContent(Content):
 	__slots__ = "_descriptor"
 
-	def __init__(self, filename, ctype):
+	def __init__(self, filename, ctype=None):
+		ctype = ctype or mimetypes.guess_type(filename)[0]
 		Content.__init__(self, ctype)
 		self._descriptor = file(filename, "rb")
 		self._clen = os.stat(filename).st_size

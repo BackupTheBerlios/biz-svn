@@ -5,14 +5,15 @@ import biz
 
 class FileServerApp(biz.Application):
 	def static(self):
-		assert self.options.has_key("fileserver.location"), \
+		options = self.options.main
+		assert options.has_key("fileserver.location"), \
 				"fileserver.location should be set for FileServerApp"
 				
-		defaultfile = self.options.get("fileserver.defaultfile", "")
+		defaultfile = options.get("fileserver.defaultfile", "")
 		
-		defaultindex = self.options.get("fileserver.defaultindex", False)
+		defaultindex = options.get("fileserver.defaultindex", False)
 
-		self.fileserver = biz.FileServer(self.options["fileserver.location"],
+		self.fileserver = biz.FileServer(options["fileserver.location"],
 						defaultfile, defaultindex)
 		
 	class Handler(biz.ArgHandler):

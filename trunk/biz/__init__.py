@@ -9,8 +9,8 @@ from biz.coms.fileserver import FileServer
 
 __version__ = "0.0.1"
 
-__all__ = ["Root", "Application", "StaticApplication", 
-			"ArgHandler", "CompositeArgHandler", ##"SecureApplication",
-			"EmptyContent", "TextContent", "HtmlContent",
-			"FileContent", "CachedFileContent", "FileServer"]
+## __all__ = ["Root", "Application", "StaticApplication", 
+## 			"ArgHandler", "CompositeArgHandler", ##"SecureApplication",
+## 			"EmptyContent", "TextContent", "HtmlContent",
+## 			"FileContent", "CachedFileContent", "FileServer"]
 

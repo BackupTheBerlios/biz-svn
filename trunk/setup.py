@@ -31,13 +31,13 @@ for opt in valid_options:
 		break
 		
 setup(name="biz",
-		version="0.0.15",
+		version="0.0.21",
 		url="http://biz.berlios.de",
 		download_url="http://developer.berlios.de/project/showfiles.php?group_id=6616",
 		author="Yuce Tekol",
 		author_email="yucetekol@gmail.com",
 		description="A web application framework that focuses on reusable applications",
 		license="GPL",
-		packages=["biz", "biz.apps", "biz.apps.vfolder", "biz.coms", "biz.default"],
+		packages=["biz", "biz.apps", "biz.apps.vfolder", "biz.coms", "biz.default", "biz.handlers"],
 		scripts=scripts,
 		)
