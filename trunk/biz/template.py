@@ -87,7 +87,8 @@ class Parser:
 
 
 class Template:
-	variable = re.compile(r"\$[{]?([a-zA-Z][\w.\[\]]*)[}]?")
+ 	variable = re.compile(r"\$[{]?([a-zA-Z][\w.]*(?:\[[\w.]\])*)[}]?")
+##	variable = re.compile(r"\$[{]?([a-zA-Z][\w.\[\]]*)[}]?")
 
 	def __init__(self, tmpl):
 		self.levels = deque()
@@ -217,7 +218,8 @@ if __name__ == "__main__":
 			</tr>
 		%}
 		</table>
-		{% 'oneliner\n' %}
+		{% a = 'oneliner\n' %}
+		[$a]
 	</body>
 </html>
 """
