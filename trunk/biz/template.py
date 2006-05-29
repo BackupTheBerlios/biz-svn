@@ -87,8 +87,8 @@ class Parser:
 
 
 class Template:
- 	variable = re.compile(r"\$[{]?([a-zA-Z][\w.]*(?:\[[\w.]\])*)[}]?")
-##	variable = re.compile(r"\$[{]?([a-zA-Z][\w.\[\]]*)[}]?")
+	variable = re.compile(r"\$[{]?([a-zA-Z][\w.]*(?:\[[\w.]\])*)[}]?")
+	body = re.compile(r"<body>(.*)</body>", re.DOTALL | re.MULTILINE)
 
 	def __init__(self, tmpl):
 		self.levels = deque()
@@ -102,7 +102,14 @@ class Template:
 		def emitter(*args):
 			self._outlist.extend([str(a) for a in args])
 			
-		self.variables["__emit"] = emitter
+		def loadbody(filename):
+			f = file(filename)  # XXX: try/except here
+			text = self.body.search(f.read()).group(1) or ""
+			f.close()
+			return text		
+			
+		self.variables["_emit"] = emitter
+		self.variables["_loadbody"] = loadbody
 		
 		parser = Parser()
 		parser.parse(tmpl)
@@ -178,7 +185,7 @@ class Template:
 				return "'''%s'''" % v
 				
 		values = [q(*iv) for iv in enumerate(self.variable.split(value))]
-		output = "%s__emit(%s)" % ("\t"*level,", ".join(values))
+		output = "%s_emit(%s)" % ("\t"*level,", ".join(values))
 		return (level,output)
 		
 	def walk(self):

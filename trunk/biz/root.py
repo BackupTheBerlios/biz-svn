@@ -207,11 +207,13 @@ class Root:
 		if name not in self._applist:
 			self._applist[name] = ApplicationInfo(name, cpath=cpath)
 
-	def register_index(self, name, cpath):
-		self._index = ApplicationInfo(name, cpath=cpath)
+## 	def register_index(self, name, cpath):
+## 		self._index = ApplicationInfo(name, cpath=cpath)
+## 		self._index = name
 
-	def register_error(self, name, cpath):
-		self._error = ApplicationInfo(name, cpath=cpath)
+## 	def register_error(self, name, cpath):
+## 		self._error = ApplicationInfo(name, cpath=cpath)
+## 		self._error = name
 
 	def _default_index(self, start_response):
 		response = Struct()
@@ -296,21 +298,16 @@ class Root:
 			if not self._index:
 				return self._default_index(start_response)
 
-			app = self._index(xenviron)
-		else:
-			try:
-				name = appname
-				app = self._applist[name](xenviron)
-				
-			except KeyError:
-				xenviron.error_code = 404
-				xenviron.error_message = _(u"Method not found")
+			appname = self._index
+			
+		try:
+			app = self._applist[appname](xenviron)
+		except KeyError:
+			xenviron.error_code = 404
+			xenviron.error_message = _(u"Method not found")
 
-				if self._error:
-					app = self._error(xenviron)
-				else:
-					return self._default_error(start_response, xenviron.error_code, 
-							xenviron.error_message)
+			return self._default_error(start_response, xenviron.error_code, 
+						xenviron.error_message)
 							
 		response = app.body(xenviron)
 		
@@ -341,15 +338,25 @@ class Root:
 			if not app in root._applist:
 				root.register_app(app, cpath)
 
-		index = "index"
-		if cfg.has_section(index):
-			app,cpath = cfg.items(index)[0]
-			root.register_index(app, cpath)
+## 		index = "index"
+## 		if cfg.has_section(index):
+## 			app,cpath = cfg.items(index)[0]
+## 			root.register_index(app, cpath)
 
-		error = "error"
-		if cfg.has_section(error):
-			app,cpath = cfg.items(error)[0]
-			root.register_error(app, cpath)
+## 		error = "error"
+## 		if cfg.has_section(error):
+## 			app,cpath = cfg.items(error)[0]
+## 			root.register_error(app, cpath)
+
+		try:
+			root._index = cfg.get("root", "index")
+		except (NoSectionError,NoOptionError):
+			root._index = ""
+			
+		try:
+			root._error = cfg.get("root", "error")
+		except (NoSectionError,NoOptionError):
+			root._error = ""
 
 		try:
 			timeout = cfg.getint("root", "timeout")
@@ -366,11 +373,9 @@ class Root:
 		root.sessionman.expiretime = expiretime
 
 		try:
-			debug = cfg.getboolean("root", "debug")
+			root.debug = cfg.getboolean("root", "debug")
 		except (NoSectionError,NoOptionError):
-			debug = False
-
-		root.debug = debug
+			root.debug = False
 
 		return root
 
