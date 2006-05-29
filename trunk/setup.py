@@ -12,7 +12,7 @@ import biz.default
 def _(s):
 	return s
 
-scripts = ["bin/bizadmin"]
+scripts = ["bin/bizadmin", "bin/bizfiller"]
 
 def pack():
 	def callback(origpath, newpath):

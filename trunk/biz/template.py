@@ -155,7 +155,10 @@ class Template:
 			template = self.from_parsed(self.parsed)
 			template.variables = self.variables.copy()
 			
-			return template	
+			return template
+			
+	def update(self, dictionary):
+		self.variables.update(dictionary)
 		
 	def handle_header(self, value, level):
 		output = "%s%s:" % ("\t"*level,value)
