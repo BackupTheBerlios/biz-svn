@@ -109,23 +109,32 @@ class Application:
 		pass
 
 	def __call__(self, request):
-		args = request.path.args
-		if len(args) > 1 and hasattr(self, "%sHandler" % args[1]):
-			handler_name = "%sHandler" % args[1]
-			_prevargs = args[:2]
-			_args = args[2:]
-		else:
-			handler_name = "Handler"
-			_prevargs = [args[0]]
-			_args = args[1:]
-				
-		handler = getattr(self, handler_name)(self, handler_name,
-							q=self.q, p=Struct())
-							
-		request.path.prevargs = _prevargs
-		request.path.args = _args
-		
-		return handler(request)
+		try:
+			args = request.path.args
+			if len(args) > 1 and hasattr(self, "%sHandler" % args[1]):
+				handler_name = "%sHandler" % args[1]
+				_prevargs = args[:2]
+				_args = args[2:]
+			else:
+				handler_name = "Handler"
+				_prevargs = [args[0]]
+				_args = args[1:]
+					
+			handler = getattr(self, handler_name)(self, handler_name,
+								q=self.q, p=Struct())
+								
+			request.path.prevargs = _prevargs
+			request.path.args = _args
+			
+			response = handler(request)
+		except Exception, e:
+			raise ApplicationError(self.name, msg=e)
+			
+		# assure that response is of type ``Struct``
+		if not isinstance(response, Struct):
+			raise ApplicationError(handler_name, msg=_(u"%(handler) did not return a valid response" % handler_name))
+			
+		return response
 			
 ## 		try:
 ## 			# XXX: Need validation here for request.args[1]

@@ -31,7 +31,7 @@ for opt in valid_options:
 		break
 		
 setup(name="biz",
-		version="0.0.23",
+		version="0.0.24",
 		url="http://biz.berlios.de",
 		download_url="http://developer.berlios.de/project/showfiles.php?group_id=6616",
 		author="Yuce Tekol",

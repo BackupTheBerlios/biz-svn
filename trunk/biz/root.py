@@ -41,12 +41,6 @@ __all__ = ["Root"]
 sessionman_lock = threading.Lock()
 applist_lock = threading.Lock()
 
-import gettext
-## try:
-## 	_ = gettext.translation("messages", "/home/yuce/prj/biz/biz/locale").ugettext # XXX
-## except:
-## 	print _(u"Locale not found")
-
 _ = lambda s: s
 
 
@@ -64,7 +58,7 @@ class ApplicationInfo(object):
 		self.body = body
 		self.mtime = mtime  # module modification time
 		self.ctime = ctime  # configuration modification time
-		self.usage = 0
+		self.usage = 0  # XXX: Not used at the moment
 		self.hotplug = hotplug
 		self.class_ = None  # Warning! this is not in the parameter list ^
 
@@ -72,9 +66,11 @@ class ApplicationInfo(object):
 		try:
 			self.ctime = os.stat(self.cpath).st_mtime
 			cfg = ConfigParser()
-			cfg.read(self.cpath)
-		except OSError:
-			raise ConfigFileNotFoundError(self.cpath, source="default config")
+			cfg.readfp(file(self.cpath))
+		except OSError, e:
+			raise ConfigFileNotFoundError(self.cpath, msg=e, source=__file__)
+		except IOError, e:
+			raise ConfigFileNotFoundError(self.cpath, msg=e, source=__file__)
 
 		sections = cfg.sections()
 
@@ -89,16 +85,14 @@ class ApplicationInfo(object):
 			raise ImproperConfigFileError(self.cpath, source="root")
 			
 		options.sections = sections
-		options.sections.remove("main")
-			
-## 		if not(options.has_key("module") ^ options.has_key("path")):
-## 			raise ImproperConfigFileError(self.cpath,
-## 					_(u"%s should have a ``module`` or ``path`` option, but not both" % self.cpath))
-
+		options.sections.remove("main")  # This is removed, so app won't get this twice
+		
+		# module and path options are mutually exclusive
 		if not(mainsect.has_key("module") ^ mainsect.has_key("path")):
 			raise ImproperConfigFileError(self.cpath,
 					_(u"%s should have a ``module`` or ``path`` option, but not both" % self.cpath))
-					
+
+		# pass the remaining sections to the app, so it may use them
 		for sectname in sections:
 			options[sectname] = dict(cfg.items(sectname))
 
@@ -112,29 +106,37 @@ class ApplicationInfo(object):
 	def _reload(self, xenviron):
 		xenviron.options = self._reload_options()
 
+		# app is standard
 		if self.module:
+			# class of the app is given
 			if self.class_:
 				try:
 					m = __import__(self.module, None, None, [self.class_])
+				except ImportError, e:
+					raise ModuleNotFoundError(self.module, msg=e, source=self.cpath)
+					
+				try:
+					# create the application
 					self.body = m.__getattribute__(self.class_)(xenviron)
-				except ImportError:
-					raise ModuleNotFoundError(self.module, source=self.cpath)
-				except AttributeError:
-					raise ApplicationNotFoundInModuleError(self.class_,
+				except AttributeError, e:
+					# XXX: this is also raised on AttributeError in app's constructor
+					raise ApplicationNotFoundInModuleError(self.class_, msg=e,
 							where=self.module, source=self.cpath)
 			else:
+				# a load function should be present in the module
 				try:
 					m = __import__(self.module, None, None, ["load"])
 				except ImportError, e:
-					print "Import error:", e
+					raise ModuleNotFoundError(self.module, msg=e, source=self.cpath)
+					
 				try:
 					self.body = m.load(xenviron)
-## 				except (ImportError,AttributeError):
 				except AttributeError, e:
-					print "Attr error:", e
-## 					raise NoApplicationExistsError(self.module, source=self.cpath)
+					# XXX: this is also raised on AttributeError in app's constructor
+					raise NoApplicationExistsError(self.module, msg=e, source=self.cpath)
 
 		else:
+			# the location of the app is given by ``path`` option
 			self.mtime = os.stat(self.mpath).st_mtime
 			path, modname = os.path.split(self.mpath)
 			modname = modname.split(".py")[0]
@@ -145,22 +147,17 @@ class ApplicationInfo(object):
 				try:
 					self.body = m.__getattribute__(self.class_)(xenviron)
 				except AttributeError, e:
+					# XXX: this is also raised on AttributeError in app's constructor
 					raise ApplicationNotFoundInModuleError(self.class_,
 						where=self.mpath, source="root", msg=e)
 			else:
 				try:
 					self.body = m.load(xenviron)
 				except AttributeError, e:
-##					for v in m.__dict__.itervalues():
-## 						try:
-## 							if issubclass(v, Application):
-## 								self.body = v(xenviron)
-## 								break
-## 						except TypeError:
-## 							pass
-## 					else:
+					# XXX: this is also raised on AttributeError in app's constructor
 					raise NoApplicationExistsError(path, source=self.cpath, msg=e)
 
+	# XXX: Not used right now
 	def unload(self):
 		self.body = None
 
@@ -182,6 +179,7 @@ class ApplicationInfo(object):
 		return False
 
 	def __call__(self, xenviron):
+		# if body is not loaded/not recent, load/reload it
 		if not self.body or self._is_modified():
 			try:
 				applist_lock.acquire()
@@ -193,46 +191,63 @@ class ApplicationInfo(object):
 		
 
 class Root:
-	def __init__(self, meltscriptname=False):
+	def __init__(self, meltscriptname=False, debug=False):  	# XXX: meltscriptname is too cryptic
+		"""Create the root WSGI application.
+		
+		* Usually, this constructor is not called by the programmer directly.
+		* It is called by ``configure``.
+		* Set ``meltscript=True`` when using by another WSGI server.
+		* Set ``debug=True`` for debug mode.
+		
+		"""
+		
 		self._applist = {}  # all apps
 		self._index = None  # index app
 		self._error = None
-		self.environ = None
-		self.start_response = None
 		self.sessionman = SessionManager()
 		self.debug = False
-		self.meltscriptname = meltscriptname
+		self.meltscriptname = meltscriptname  # XXX: meltscriptname is too cryptic
 
 	def register_app(self, name, cpath):
+		"""Register the application if it is not already registered.
+		
+		* This method is called by ``configure``.		
+		* ``cpath`` is the path of the configuration file.
+		
+			- If the config. files are in cfg/ cpath could be
+			``cfg/example.ini``.
+		
+		"""
+		
 		if name not in self._applist:
 			self._applist[name] = ApplicationInfo(name, cpath=cpath)
+		# XXX: maybe we should raise an exception if name is in applist
 
-## 	def register_index(self, name, cpath):
-## 		self._index = ApplicationInfo(name, cpath=cpath)
-## 		self._index = name
-
-## 	def register_error(self, name, cpath):
-## 		self._error = ApplicationInfo(name, cpath=cpath)
-## 		self._error = name
-
+	# TODO: This is pretty ugly, make it more useful
 	def _default_index(self, start_response):
 		response = Struct()
 		response.content = TextContent(_(u"Index method is left out"))
 		response.code = 404
 		response.heads = Heads()
+		
 		return self._prepare_response(start_response, Response(response))
 		
+	# TODO: This is pretty ugly, make it more useful
 	def _default_error(self, start_response, code, message):
 		response = Struct()
 		response.content = TextContent(message)
 		response.code = code
 		response.heads = Heads()
+		
 		return self._prepare_response(start_response, Response(response))
 
 	def __call__(self, environ, start_response):
+		# TODO: The error handler must be put here
 		return self.run(environ, start_response)
 
 	def run(self, environ, start_response):
+		# tuplize query part of the URL
+		# /abc?x=1&y becomes (x,1) (y,True)
 		def tuplize(x):
 			l = x.split("=")[:2]
 			if len(l) == 1:
@@ -275,6 +290,8 @@ class Root:
 			xenviron.path.scriptname = ""
 		
 		xenviron.path.kwargs = params
+		
+		# use Python's ``cgi`` module to parse contents of POST
 		try:
 			xenviron.fields = FieldStorage(environ=environ,
 						fp=environ["wsgi.input"])
@@ -283,6 +300,7 @@ class Root:
 			
 		xenviron.cookies = SimpleCookie(environ.get("HTTP_COOKIE", ""))
 
+		# TODO: Find a way to figure out whether the client browser can use cookies
 		try:
 			sessionman_lock.acquire()
 			try:
@@ -294,6 +312,8 @@ class Root:
 			
 		appname = path[0]
 
+		# if no application name given in the URL (i.e., it is ``/``),
+		# ... call the index/default index application
 		if not appname:
 			if not self._index:
 				return self._default_index(start_response)
@@ -302,9 +322,12 @@ class Root:
 			
 		try:
 			app = self._applist[appname](xenviron)
-		except KeyError:
+		except KeyError, e:
 			xenviron.error_code = 404
-			xenviron.error_message = _(u"Method not found")
+			if self.debug:
+				xenviron.error_message = unicode(e)
+			else:
+				xenviron.error_message = _(u"Method not found")
 
 			return self._default_error(start_response, xenviron.error_code, 
 						xenviron.error_message)
@@ -338,16 +361,12 @@ class Root:
 			if not app in root._applist:
 				root.register_app(app, cpath)
 
-## 		index = "index"
-## 		if cfg.has_section(index):
-## 			app,cpath = cfg.items(index)[0]
-## 			root.register_index(app, cpath)
+		try:
+			root.debug = cfg.getboolean("root", "debug")
+		except (NoSectionError,NoOptionError):
+			root.debug = False
 
-## 		error = "error"
-## 		if cfg.has_section(error):
-## 			app,cpath = cfg.items(error)[0]
-## 			root.register_error(app, cpath)
-
+		return root
 		try:
 			root._index = cfg.get("root", "index")
 		except (NoSectionError,NoOptionError):
@@ -372,10 +391,4 @@ class Root:
 
 		root.sessionman.expiretime = expiretime
 
-		try:
-			root.debug = cfg.getboolean("root", "debug")
-		except (NoSectionError,NoOptionError):
-			root.debug = False
-
-		return root
 
