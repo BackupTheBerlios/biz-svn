@@ -1,0 +1,6 @@
+
+This directory contains templates for generating HTML pages or email messages.
+
+**Do not remove** ``__init__.py`` if you are using a templating system that
+generates Python source (e.g., *Cheetah*).
+
