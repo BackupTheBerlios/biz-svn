@@ -1,0 +1,7 @@
+
+This directory contains applications that are specific to this site, or the
+installed 3rd party applications.
+
+**Do not remove** ``__init__.py``, it is required for Python to import the
+applications in this folder.
+

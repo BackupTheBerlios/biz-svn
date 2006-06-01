@@ -1,0 +1,83 @@
+
+=======================
+Biz Application Routing
+=======================
+
+
+:version: 0.0.1-0.0.32
+:date: 2006-06-01
+:author: Yüce Tekol <http://www.geocities.com/yucetekol>
+:status: To be completed...
+
+.. contents::
+
+
+Introduction
+------------
+
+A web application server decides which application to run using the request
+URL; this is called *routing*. Biz has two levels of routing in two distinct
+places: application routing in the *root* and handler routing in an
+application. Root is a special WSGI application that is used to invoke other
+applications.
+
+Suppose we have a server running on domain ``www.example.com``. The server runs a
+WSGI-compatible HTTP server (e.g., Twisted) and supports Biz. We receive a
+request to the URL::
+
+    http://www.example.com/photo/image/show/42
+
+Here is what happens,
+
+1) HTTP server receives the request to
+   ``http://www.example.com/photo/image/show/42``,
+
+2) Server runs the WSGI-adapter and passes ``/photo/image/show/42`` (path info) to
+   it, 
+
+3) WSGI-adapter runs Biz root, passing ``/photo/image/show/42`` as path info,
+
+4) Root converts path info to a Python list called ``path.args``, ``["photo",
+   "image", "show", "42"]``; and it runs the **photo** application, because the
+   first part of ``path.args`` points to it; 
+
+5) photo application receives ["image", "show", "42"]. At this point, it is
+   completely up to the application deciding what to do with ``path.args``; it
+   may use them directly, or employ the class-based *handling* Biz supports.
+   Let's assume the latter, and suppose that the application has a member class
+   called ``imageHandler`` of type ``CompositeArgHandler``,
+
+6) ``imageHandler`` receives ["show", "42"]; it can use these directly, or may
+   employ the class-based handling; again let's assume the latter, and suppose
+   that it has a member class ``showHandler`` of type ``ArgHandler``,
+7) ``showHandler`` receives ["42"]; let's assume that it sends the response
+   with 42nd image in it.
+
+If we programmed it, our hypothetical application would seem like::
+
+    class PhotoApp(Application):
+        # ...
+
+        class imageHandler(CompositeArgHandler):
+            # ...
+
+            class showHandler(ArgHandler):
+                def dynamic(self):
+                    # ... process path.args
+                    #     and return the image in response ...
+                    
+
+Now, onto the details...
+
+
+Application-Level Routing
+-------------------------
+
+[TO BE WRITTEN]
+
+
+Handler-Level Routing
+---------------------
+
+[TO BE WRITTEN]
+

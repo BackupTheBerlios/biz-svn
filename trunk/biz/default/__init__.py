@@ -71,7 +71,7 @@ def unpack(dirname, callback=None):
 		if callback:
 			callback(filename)
 
-		f = file(filename, "w")
+		f = file(filename, "wb")
 		f.write(data)
 		f.close()
 

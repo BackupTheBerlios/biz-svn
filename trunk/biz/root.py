@@ -366,7 +366,6 @@ class Root:
 		except (NoSectionError,NoOptionError):
 			root.debug = False
 
-		return root
 		try:
 			root._index = cfg.get("root", "index")
 		except (NoSectionError,NoOptionError):
@@ -391,4 +390,5 @@ class Root:
 
 		root.sessionman.expiretime = expiretime
 
+		return root
 

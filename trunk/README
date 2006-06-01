@@ -1,44 +1,48 @@
 
-Biz - Web Application Framework
-===============================
+Welcome to Biz!
+===============
 
-Biz is a GPL'd web application framework written in Python. It is currently in
-active development.
 
-Install
--------
+**Biz** is a GPL'd cross-platform web application framework written in Python.
+It currently features an easy-to-program API for writing easy-to-use
+server-side web applications, application routing, a simple template system,
+and necessary tools for creating and running Biz projects.
 
-Biz requires Python 2.4 to work, some of the examples may also depend on
-recent versions of SQLObject and/or Cheetah.
+While creating Biz, we aim non-programmer users, one-man-army programmers and
+small project teams working on small and medium size dynamic web sites.Once it
+is completed, Biz will offer:
 
-Installing from source
-......................
+* An easy but powerful API for creating server&client-side web applications,
+* Easily create and distribute web applications and deploy them in a web site,
+* A platform for sharing web applications,
+* Full support for i18n/i10n (internationalization/localization),
+* Support for most popular HTTP servers (e.g, Apache, Twisted, Lighttpd, ...),
+* Full WSGI-compliance at the application router level,
+* Wrappers for 3rd party WSGI applications,
+* A built-in ORM (object relational mapper) for database access.
+   
+We are in the *pre-alpha* stage right now, things are in flux, the API is
+changing weekly, and there is not much documentation; but this is no excuse for
+you not to try **Biz** :).
 
-Biz uses the standard distutils, so all you have to do is::
-	
-	sudo python setup.py install
+Biz is licensed under **GPL**, you may see the license text in the ``LICENSE``
+file.
 
-Note:
-	If you are on Windows, you may want to copy ``bin/bizadmin.bat`` to a
-	directory on the path.
+Have a look at  ``INSTALL`` file for information on installing/uninstalling Biz
+on your system. Biz is being tested on the following platforms regularly:
 
-Installing from RPM package
-...........................
+* Ubuntu Breezy Badger *(development)* <http://www.ubuntulinux.org>
+* Pardus 1.0 <http://www.uludag.org.tr>
+* FreeBSD 6.0 <http://www.freebsd.org>
+* Windows XP Professional (Turkish)
 
-TODO
+**HELP:** If you have a Mac, please inform us about your Biz experience; your
+feedback is invaluable. Thank you!
 
-Installing from Win32 setup package
-...................................
+For a tutorial on writing your first Biz application, see ``doc/tutorial.html``
+in the source distribution (not included in windows installer package).
 
-Just double-click on ``Biz-X.X.X.win32.exe``. You may need administrator
-priviledges. The setup program creates ``bizadmin.bat`` for you at Python
-``Scripts`` directory; make sure that, ``Scripts`` directory is on the path;
-or you can copy ``bizadmin.bat`` to a directory on the path.
+The homepage of Biz is at, http://biz.berlios.de. You can visit us for help on
+Biz, share your thoughts, ideas, patches and feature requests. Thanks!
 
-What else?
-----------
-
-You can find more about Biz at: http://biz.berlios.de
-
-Have fun!
 
