@@ -165,6 +165,7 @@ class StaticApplication:
 	def __init__(self, xenviron):
 		self.options = xenviron.options
 		self.response = Struct()
+		self.response.code = 200
 		self.response.content = TextContent(_(u"application default"))
 		self.response.session = xenviron.session
 		self.response.cookies = xenviron.cookies

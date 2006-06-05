@@ -1,17 +1,22 @@
 
+==============
 Installing Biz
 ==============
 
+
+Introduction
+------------
 
 Biz requires Python 2.4 to work. Currently no other package is required for
 basic usage.
 
 Biz is regularly being tested on the following platforms:
 
-* Ubuntu Breezy Badger *(development)* <http://www.ubuntulinux.org>
+* Ubuntu 6.06 (Dapper) *(development)* <http://www.ubuntulinux.org>
+* Ubuntu 5.10 (Breezy) *(development)* 
 * Pardus 1.0 <http://www.uludag.org.tr>
 * FreeBSD 6.0 <http://www.freebsd.org>
-* Windows XP Professional (Turkish)
+* Windows XP Professional SP2 (Turkish)
 
 We don't have a Mac, so if you can test Biz there and inform us about the
 success or problems, we would appreciate that.
@@ -24,13 +29,12 @@ Biz is packaged in four formats:
   created by Python distutils and not tested.
 * Win32 exe
 
-Currently we don't have any deb packages, but you can convert RPM package to
-deb using **Alien**. We occasionally test this option.
+Currently we don't have any deb packages, but you can convert the RPM package
+to deb using **Alien**. We occasionally test this option.
 
 
 Installing From Source
 ----------------------
-
 
 Assuming you have ``biz-X.X.X.tar.gz`` or ``biz-X.X.X.zip``,
 
@@ -67,13 +71,11 @@ Assuming you have ``biz-X.X.X.tar.gz`` or ``biz-X.X.X.zip``,
 Installing the RPM
 -------------------
 
-
 [TO BE WRITTEN]
 
 
 Installing Using Win32 Installer
 --------------------------------
-
 
 1) Run the ``biz.X.X.X.exe`` and follow the wizard.
 

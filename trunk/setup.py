@@ -14,24 +14,18 @@ def _(s):
 
 scripts = ["bin/bizadmin", "bin/bizfiller"]
 
-def pack():
-	def callback(origpath, newpath):
-		print _("Packing: %(origpath)s -> %(newpath)s" % \
-				dict(origpath=origpath, newpath=newpath))
-
-	biz.default._pack("default", callback)
 
 if "--install-script" in sys.argv:
 	scripts.append("bin/biz-postinstall.py")
 
-valid_options = ["sdist", "bdist", "bdist_rpm", "bdist_wininst"]
-for opt in valid_options:
-	if opt in sys.argv:
-		pack()
-		break
+## valid_options = ["sdist", "bdist", "bdist_rpm", "bdist_wininst"]
+## for opt in valid_options:
+## 	if opt in sys.argv:
+## 		pack()
+## 		break
 		
 setup(name="biz",
-		version="0.0.32",
+		version="0.0.33",
 		url="http://biz.berlios.de",
 		download_url="http://developer.berlios.de/project/showfiles.php?group_id=6616",
 		author="Yuce Tekol",
