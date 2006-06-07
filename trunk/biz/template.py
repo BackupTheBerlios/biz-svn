@@ -32,8 +32,9 @@ class Parser:
 	endline = re.compile(r"^\s*%\}\s*$")
 	onelinerline = re.compile(r"^\s*\{%(.*)%\}\s*$")
 	chainedline = re.compile(r"^\s*%\}(.*)\{%\s*$")
+	paragraph = re.compile(r"{\?(.*?)\?}", re.DOTALL)
 	
-	TEXT, HEADER, END, CHAIN, ONELINER = \
+	TEXT, HEADER, END, CHAIN, ONELINER, = \
 		"text", "header", "end", "chain", "oneliner"
 	
 	def __init__(self):
@@ -65,25 +66,34 @@ class Parser:
 	
 	def parse(self, lines):
 		text = []
-		for line in lines.split("\n"):
-			if not line:
-				continue
-				
-			for handler, parser in self.handlers:
-				r = parser.search(line)
-				if r:
-					if text:
-						self.handle_text(text)
-						text = []
-						
-					getattr(self, "handle_%s" % handler)(r.groups())
-					break
-			else:
-				text += "%s\n" % line
 		
-		if text:
-			self.handle_text(text)
-			text = []
+		for i, t in enumerate(self.paragraph.split(lines)):
+			# handle paragprah, {? ... ?}
+			if i%2:
+				ts = [x for x in t.split("\n") if x.strip()]
+				margin = len(ts[0]) - len(ts[0].lstrip())
+				for l in ts:
+					self.items.append((self.ONELINER,l[margin:]))
+			else:
+				for line in t.split("\n"):
+					if not line:
+						continue
+						
+					for handler, parser in self.handlers:
+						r = parser.search(line)
+						if r:
+							if text:
+								self.handle_text(text)
+								text = []
+								
+							getattr(self, "handle_%s" % handler)(r.groups())
+							break
+					else:
+						text += "%s\n" % line
+				
+				if text:
+					self.handle_text(text)
+					text = []
 
 
 class Template:
@@ -182,7 +192,7 @@ class Template:
 		
 	def handle_text(self, value, level):
 		def q(i, v):
-			if i % 2:
+			if i%2:
 				return "%s" % v
 			else:
 				return "'''%s'''" % v
@@ -231,6 +241,10 @@ if __name__ == "__main__":
 		{% a = 'oneliner\n' %}
 		[$a]
 	</body>
+	{?
+	if 10 > 5:
+		print "hello"
+	?}
 </html>
 """
 	template = Template(test)

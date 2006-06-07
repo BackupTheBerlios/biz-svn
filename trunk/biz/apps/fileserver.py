@@ -5,23 +5,24 @@ import biz
 
 class FileServerApp(biz.Application):
 	def static(self):
-		options = self.options.main
-		assert options.has_key("fileserver.location"), \
-				"fileserver.location should be set for FileServerApp"
+		options = self.q.options.main
+		assert options.has_key("location"), \
+				"location should be set for FileServerApp"
 				
-		defaultfile = options.get("fileserver.defaultfile", "")
+		defaultfile = options.get("defaultfile", "")
 		
-		defaultindex = options.get("fileserver.defaultindex", False)
+		defaultindex = options.get("defaultindex", False)
 
-		self.fileserver = biz.FileServer(options["fileserver.location"],
+		self.q.fileserver = biz.FileServer(options["location"],
 						defaultfile, defaultindex)
 		
 	class Handler(biz.ArgHandler):
 		def dynamic(self):
+			q = self.q
 			path = self.request.path
 			
 			if path.endswithslash:
-				fileserver = self.app.fileserver
+				fileserver = q.fileserver
 				fileserver.run(path.args)
 				self.response.code, self.response.content = fileserver.get()
 			else:

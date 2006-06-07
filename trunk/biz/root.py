@@ -19,12 +19,12 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 
-try:
-	import psyco
-except ImportError, e:
-	print e
-else:
-	psyco.profile()
+## try:
+## 	import psyco
+## except ImportError, e:
+## 	print e
+## else:
+## 	psyco.profile()
 	
 import imp
 import time
@@ -306,6 +306,7 @@ class Root:
 			raise WSGIKeyNotPresentError("wsgi.input")
 			
 		xenviron.cookies = SimpleCookie(environ.get("HTTP_COOKIE", ""))
+		xenviron.env = environ
 
 		# TODO: Find a way to figure out whether the client browser can use cookies
 		try:
