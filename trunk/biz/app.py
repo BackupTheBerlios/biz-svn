@@ -136,23 +136,6 @@ class Application:
 			
 		return response
 			
-## 		try:
-## 			# XXX: Need validation here for request.args[1]
-## 			handler = getattr(self, handler_name
-## 					(self, "%sHandler" % args[1], q=self.q, p=Struct())
-## 			request.path.prevargs = args[:2]  # /app[0]/handler1[1]/param1[2]/...
-## 			request.path.args = args[2:]
-## 		except (IndexError, AttributeError):  # XXX:
-## 			print "Handler"
-## 			try:
-## 				handler = self.Handler(self, "Handler", q=self.q, p=Struct())
-## 			except Exception, e:
-## 				print "Handler except"
-## 				print e.args
-## 			request.path.prevargs = [args[0]]
-## 			request.path.args = args[1:]
-## 			
-## 		return handler(request)
 
 	class Handler(ArgHandler):
 		def dynamic(self):

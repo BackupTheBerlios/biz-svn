@@ -37,7 +37,7 @@ from cgi import FieldStorage
 import threading
 
 from biz.app import Application
-from biz.utility import Struct, Heads
+from biz.utility import Struct, Heads, CookieJar
 from biz.content import TextContent
 from biz.response import Response
 from biz.session import SessionManager, SessionError
@@ -305,7 +305,7 @@ class Root:
 		except KeyError:
 			raise WSGIKeyNotPresentError("wsgi.input")
 			
-		xenviron.cookies = SimpleCookie(environ.get("HTTP_COOKIE", ""))
+		xenviron.cookies = CookieJar(environ.get("HTTP_COOKIE", ""))
 		xenviron.env = environ
 
 		# TODO: Find a way to figure out whether the client browser can use cookies

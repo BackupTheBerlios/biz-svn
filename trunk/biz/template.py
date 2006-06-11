@@ -116,10 +116,21 @@ class Template:
 			f = file(filename)  # XXX: try/except here
 			text = self.body.search(f.read()).group(1) or ""
 			f.close()
-			return text		
+			return text
+		
+		def include(filename):
+			f = file(filename)  # XXX: try/except here
+			text = f.read()
+			f.close()
+			p = Parser()
+			p.parse(text)
+			code = "\n".join(self.walk(p.items))
+			namespace = self.variables
+			exec code in namespace
 			
 		self.variables["_emit"] = emitter
 		self.variables["_loadbody"] = loadbody
+		self.variables["_include"] = include
 		
 		parser = Parser()
 		parser.parse(tmpl)
@@ -128,8 +139,8 @@ class Template:
 	def render(self, force=False):
 		if force or self.changed:
 			self._outlist = []
-			code = "\n".join(self.walk())
-			namespace = self.variables.copy()
+			code = "\n".join(self.walk(self.parsed))
+			namespace = self.variables  #.copy() # XXX:
 			
 			exec code in namespace
 			self.output = "".join(self._outlist)
@@ -201,10 +212,10 @@ class Template:
 		output = "%s_emit(%s)" % ("\t"*level,", ".join(values))
 		return (level,output)
 		
-	def walk(self):
+	def walk(self, parsed):
 		level = 0
 		output = []
-		for handler, value in self.parsed:
+		for handler, value in parsed:
 			level, out = getattr(self, "handle_%s" % handler)(value, level)
 			if out:
 				output.append(out)

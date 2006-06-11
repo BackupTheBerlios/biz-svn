@@ -18,9 +18,9 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 import time
-from Cookie import SimpleCookie
+##from Cookie import SimpleCookie
 
-from utility import Struct
+from utility import Struct, Cookie, CookieJar
 from biz.uuid import uuid_time
 
 SESSION_ID = "sid"
@@ -87,8 +87,6 @@ class SessionManager:
 			print "session update error"  # TODO: Do some logging here
 
 	def revoke(self, sid):
-		##try:
-			##self.sessions[sid] = None
 		del self.sessions[sid]
 		#except KeyError:
 		#    pass
@@ -101,21 +99,18 @@ class Session:
 	def __init__(self, sessionman, sid):
 		self.sessionman = sessionman
 		self.sid = sid
-		self.sidcookie = SimpleCookie("%s=%s" % (SESSION_ID,self.sid))
+		self.sidcookie = Cookie(SESSION_ID, self.sid, path="/")
 		self.data = Struct()
 		self.creationtime = time.time()
 		self.accesstime = self.creationtime
+		self.__setitem__ = self.data.__setitem__
+		self.__getitem__ = self.data.__getitem__
+		self.get = self.data._get
+		self.has_key = self.data._has_key
 
 	def close(self):
 		if self.sid:
-			self.sidcookie = SimpleCookie("%s=" % SESSION_ID)
+			self.sidcookie.value = ""
+			self.sidcookie["path"] = "/"
 			self.sessionman.revoke(self.sid)
-
-	def __setitem__(self, key, value):
-		self.data[key] = value
-
-	def __getitem__(self, key):
-		return self.data[key]
-
-
 

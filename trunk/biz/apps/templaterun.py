@@ -21,7 +21,8 @@ class TemplateRunApp(Application):
 			template["options"] = q.options
 			template["scriptname"] = q.scriptname
 			template["selfname"] = self.name
-## 			template["request"] = self.request
+			template["cookies"] = request.cookies
+			template["session"] = request.session
 			
 			self.response.content = HtmlContent(str(template))
 			

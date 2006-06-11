@@ -20,7 +20,7 @@
 from Cookie import SimpleCookie
 
 from biz.content import EmptyContent
-from biz.utility import Struct, Heads
+from biz.utility import Struct, Heads, CookieJar
 
 
 RESPONSES = {
@@ -97,25 +97,16 @@ def wsgi_response(start_response, response):
 
 
 class Response:
-## 	def __init__(self, code=200, content=EmptyContent(), **kwargs):
 	def __init__(self, response):
-## 		self.code = response.code
-## 		self.content = response.content
-		
-		cookies = SimpleCookie()
+		# this try/except block is for functions that can not provide a
+		# ... response with cookies and/or sessions
 		try:
-			cookies.update(response.cookies)
-			cookies.update(response.session.sidcookie)
-			cookies = str(cookies).split()[1]
-			response.heads.set_cookie = cookies
+			cookies = response.cookies
+			cookies.modify(response.session.sidcookie)
+			response.heads.set_cookie = cookies.getlist()
 		except AttributeError:
 			pass
 			
-
-		
-## 		self.heads = Heads(**kwargs)
-## 		self.heads.content_type = response.content.ctype
-## 		self.heads.content_length = response.content._clen
 		response.heads.content_type = response.content.ctype
 		response.heads.content_length = response.content._clen
 		
@@ -125,6 +116,4 @@ class Response:
 		r = self.response
 		return ("%d %s" % (r.code,RESPONSES.get(r.code, ["Unknown"])[0]), \
 				r.heads._getlist(),r.content.get())
-
-
 
