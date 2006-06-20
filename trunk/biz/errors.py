@@ -138,9 +138,10 @@ class HTTPError(Exception):
 
 
 class ApplicationError(BizError):
-	def __init__(self, what, msg=None, **kwargs):
+	def __init__(self, what, where="", msg=None, **kwargs):
 		BizError.__init__(self, what,
-				msg or _("Application error: ``%(what)s``" % dict(what=what)),
+				msg or _("Application error: ``%(what)s`` in ``%(where)s`` [source: ``%(source)s``]\nInfo: %(info)s" % \
+				dict(what=what, where=where, source=kwargs.get("source", _("UNKNOWN")), info=kwargs.get("info", u""))),
 				**kwargs)
 
 

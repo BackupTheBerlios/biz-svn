@@ -9,15 +9,15 @@ class FileHandler(ArgHandler):
 		q = self.q
 		assert "location" in q[self.name]
 		
-		args = self.request.path.args
+		args = self.r.path.args
 		
 		filename = os.path.join(q[self.name]["location"], *args)
 		print filename
 		
 		if os.path.isdir(filename):
-			self.response.code = 404
+			self.r.code = 404
 			return
 		
-		self.response.content = FileContent(filename)
+		self.r.content = FileContent(filename)
 		
 		

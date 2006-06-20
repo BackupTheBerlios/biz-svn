@@ -1,0 +1,89 @@
+
+==================================
+Biz Application Special Properties
+==================================
+
+:version: 0.0.1-0.0.36
+:date: 2006-06-15
+:author: Yüce Tekol <http://www.geocities.com/yucetekol>
+:status: Incomplete
+
+.. contents::
+
+
+Introduction
+------------
+
+A Biz application class contains a *static*, and several *dynamic* parts; each of
+these dynamic parts is called a *handler*. All the information flow between
+an application its handlers are done via special properties, ``p``, ``q``, and
+``r``. This short paper introduces these properties and their sub-properties.
+
+Before we carry on, it is important to recognize the difference between static
+and dynamic parts (handlers) of a Biz application; static part is called only
+*once* when the application is initialized, but dynamic part(s) is/are called
+whenever a request is received that points to the relevant dynamic part. So the
+information used by the application should be divided into two,
+application-wide (corresponds to ``q`` properties) and handler-wide
+(corresponds to ``p`` and ``r`` properties).
+
+
+``q`` Properties
+----------------
+
+Static properties which should not change and will be used by all the handlers
+application-wide are called ``q`` properties. These properties can be accessed
+by ``self.q.property_name`` in the application, where ``property_name`` is a
+property. It is important not to modify ``q`` properties, in a threaded
+environment you may not have expected results. If you must change a ``q``
+property, do it inside a *lock*.
+
+Following table lists common ``q`` properties; you can have additional
+properties in your application:
+
++---------------+---------------------------------------------------+
+|Property       |Description                                        |
++===============+===================================================+
+|q.options      |Application options                                |
++---------------+---------------------------------------------------+
+|q.options.main |Application options given under ``[main]`` in the  |
+|               |configuration file                                 |
++---------------+---------------------------------------------------+
+|q.scriptname   |Script name                                        |
++---------------+---------------------------------------------------+
+
+Here is a sample application that loads a template::
+
+    class SampleApp(Application):
+        def static(self):
+            q = self.q
+            q.template = q.options.main["template"]
+
+        class Handler(ArgHandler):
+            def dynamic(self):
+                q = self.q
+                template = q.template.copy(True)
+                # ...
+
+
+``p`` Properties
+----------------
+
+These properties are used when a handler passes some information to a
+sub-handler. You can safely modify these properties, since they are re-created
+when a handler is called (created) and destroy when the handler finishes
+(destroyed).
+
+The use of ``p`` properties is completely upto the programmer, currently there
+are no common ``p`` property.
+
+Here is a sample application::
+
+[TO BE COMPLETED]
+
+
+``r`` Properties
+----------------
+
+
+

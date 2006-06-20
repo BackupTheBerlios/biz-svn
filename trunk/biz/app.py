@@ -38,22 +38,19 @@ class ArgHandler:
 		self.parent = parent
 		self.name = name
 		self.__dict__.update(kwargs)
-		self.response = Struct()
-		self.response.content = TextContent(_(u"handler default"))
-		self.response.code = 200
-		self.response.heads = Heads()
 		
 	def __call__(self, request):
-		self.request = request
-		self.response.session = request.session
-		self.response.cookies = request.cookies
+		self.r = request
+		self.r.content = TextContent(_(u"handler default"))
+		self.r.code = 200
+		self.r.heads = Heads()
 		
 		try:
 			self.dynamic()
 		except Exception, e:
 			raise ApplicationDynamicError(e.args, where=self.name, source=__file__)
 		
-		return self.response
+		return self.r
 		
 	def dynamic(self):
 		"""
@@ -65,26 +62,27 @@ class ArgHandler:
 		
 	def redirect(self, location, permanent=False):
 		if permanent:
-			self.response.code = 301
+			self.r.code = 301
 		else:
-			self.response.code = 307
-		self.response.heads.location = location
-		self.response.content = EmptyContent()
+			self.r.code = 307
+		self.r.heads.location = location
+		self.r.content = EmptyContent()
 		
 		
 class CompositeArgHandler(ArgHandler):
 	def __call__(self, request):
-		args = request.path.args
+		self.r = request
+		path = self.r.path
 		try:
 			# XXX: Need validation here for request.args[1]
-			handler = getattr(self, "%sHandler" % args[0])(self, "%sHandler" % args[0], q=self.q, p=self.p)
-			request.path.prevargs = request.path.prevargs + [args[0]]  # /app[0]/handler1[1]/param1[2]/...
-			request.path.args = args[1:]
+			handler = getattr(self, "%sHandler" % path.args[0])(self, "%sHandler" % path.args[0], q=self.q, p=self.p)
+			path.prevargs += [path.args[0]]  # /app[0]/handler1[1]/param1[2]/...
+			path.args = path.args[1:]
 				
-			return handler(request)
+			return handler(self.r)
 			
 		except (IndexError, AttributeError):
-			return self.__handle(request)
+			return self.__handle(self.r)
 			
 	def __handle(self, request):
 		return ArgHandler.__call__(self, request)
@@ -128,7 +126,7 @@ class Application:
 			
 			response = handler(request)
 		except Exception, e:
-			raise ApplicationError(self.name, msg=e)
+			raise ApplicationError(self.name, where=handler_name, info=e)
 			
 		# assure that response is of type ``Struct``
 		if not isinstance(response, Struct):
@@ -139,26 +137,30 @@ class Application:
 
 	class Handler(ArgHandler):
 		def dynamic(self):
-			self.code = 404
-			self.response.content = TextContent(_(u"%s not found") % \
-							self.request.path.args)
+			r = self.r
+			r.code = 404
+			r.content = TextContent(_(u"%s not found") % \
+							r.path.args)
 
 
 class StaticApplication:
-	def __init__(self, xenviron):
-		self.options = xenviron.options
-		self.response = Struct()
-		self.response.code = 200
-		self.response.content = TextContent(_(u"application default"))
-		self.response.session = xenviron.session
-		self.response.cookies = xenviron.cookies
-		self.response.heads = Heads()
-		
-		self.static()
-		
-	def static(self):
-		pass
-		
-	def __call__(self, request):
-		return self.response
-		
+	pass
+
+## class StaticApplication:
+## 	def __init__(self, xenviron):
+## 		self.options = xenviron.options
+## 		self.response = Struct()
+## 		self.response.code = 200
+## 		self.response.content = TextContent(_(u"application default"))
+## 		self.response.session = xenviron.session
+## 		self.response.cookies = xenviron.cookies
+## 		self.response.heads = Heads()
+## 		
+## 		self.static()
+## 		
+## 	def static(self):
+## 		pass
+## 		
+## 	def __call__(self, request):
+## 		return self.response
+## 		

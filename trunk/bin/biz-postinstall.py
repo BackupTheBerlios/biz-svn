@@ -18,7 +18,7 @@ def main():
 				print>>f, '@echo off\n"%s" "%s" %%*' % (pythonloc,loc)
 				f.close()
 				file_created(batloc)
-			except IOError, :
+			except IOError, e:
 				print e
 			
 if __name__ == "__main__":

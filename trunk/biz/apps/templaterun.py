@@ -14,17 +14,21 @@ class TemplateRunApp(Application):
 		def dynamic(self):
 			q = self.q
 			template = q.template.copy(True)
-			request = self.request
-			template["env"] = request.env
-			template["path"] = request.path
-			template["fields"] = request.fields
+			template["r"] = self.r
 			template["options"] = q.options
 			template["scriptname"] = q.scriptname
 			template["selfname"] = self.name
-			template["cookies"] = request.cookies
-			template["session"] = request.session
+## 			request = self.request
+## 			template["env"] = request.env
+## 			template["path"] = request.path
+## 			template["fields"] = request.fields
+## 			template["options"] = q.options
+## 			template["scriptname"] = q.scriptname
+## 			template["selfname"] = self.name
+## 			template["cookies"] = request.cookies
+## 			template["session"] = request.session
 			
-			self.response.content = HtmlContent(str(template))
+			self.r.content = HtmlContent(str(template))
 			
 			
 def load(x):

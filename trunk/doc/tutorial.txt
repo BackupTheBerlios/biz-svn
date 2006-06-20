@@ -89,16 +89,16 @@ Let's have a look at the simplest application below::
     class HelloApp(Application):
         class Handler(ArgHandler):
             def dynamic(self):
-                self.response.content = TextContent("Hello, World!")
+                self.r.content = TextContent("Hello, World!")
 
     def load(x):
         return HelloApp(x)
 
-In the example, we derived ``HelloApp`` from ``Application``; by doing
-so, we leave a lot of dirty work like setting the response code, content type,
-etc to Biz. For now, you can think of ``Handler`` as the default entry point.
-The ``load`` function is required by the *root* in order to find the
-application to invoke.
+In the example, we derived ``HelloApp`` from ``Application``; by doing so, we
+leave a lot of dirty work like setting the response code, content type, etc to
+Biz. ``r`` is one of the three special handler properties. For now, you can
+think of ``Handler`` as the default entry point. The ``load`` function is
+required by the *root* in order to find the application to invoke.
 
 Save the code under the directory ``apps`` in the project directory as
 ``hello.py``. Next, we need a configuration file, save the following under
@@ -160,7 +160,7 @@ our application ``printargs``, save the following under ``apps`` as
         class Handler(ArgHandler):
             def dynamic(self):
                 # Here are the arguments...
-                path = self.request.path
+                path = self.r.path
 
                 # prepare the content
                 content = []
@@ -171,7 +171,7 @@ our application ``printargs``, save the following under ``apps`` as
                                     path.kwargs.iteritems()])
 
                 # Let's send them in the response
-                self.response.content = TextContent("\n".join(content))
+                self.r.content = TextContent("\n".join(content))
 
     def load(x):
         return PrintArgsApp(x)
