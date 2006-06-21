@@ -25,7 +25,7 @@ if "--install-script" in sys.argv:
 ## 		break
 		
 setup(name="biz",
-		version="0.0.35",
+		version="0.0.36",
 		url="http://biz.berlios.de",
 		download_url="http://developer.berlios.de/project/showfiles.php?group_id=6616",
 		author="Yuce Tekol",
