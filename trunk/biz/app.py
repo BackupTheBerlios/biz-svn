@@ -145,22 +145,3 @@ class Application:
 
 class StaticApplication:
 	pass
-
-## class StaticApplication:
-## 	def __init__(self, xenviron):
-## 		self.options = xenviron.options
-## 		self.response = Struct()
-## 		self.response.code = 200
-## 		self.response.content = TextContent(_(u"application default"))
-## 		self.response.session = xenviron.session
-## 		self.response.cookies = xenviron.cookies
-## 		self.response.heads = Heads()
-## 		
-## 		self.static()
-## 		
-## 	def static(self):
-## 		pass
-## 		
-## 	def __call__(self, request):
-## 		return self.response
-## 		

@@ -19,12 +19,13 @@ class FileServerApp(biz.Application):
 	class Handler(biz.ArgHandler):
 		def dynamic(self):
 			q = self.q
-			path = self.request.path
+			r = self.r
+			path = r.path
 			
 			if path.endswithslash:
 				fileserver = q.fileserver
 				fileserver.run(path.args)
-				self.response.code, self.response.content = fileserver.get()
+				r.code, r.content = fileserver.get()
 			else:
 				self.redirect("/%s/" % "/".join(path.prevargs + path.args), permanent=True)
 
