@@ -3,10 +3,10 @@
 Biz Templating
 ==============
 
-:version: 0.0.2-0.0.33
-:date: 2006-06-02
+:version: 0.0.90-0.0.37
+:date: 2006-06-24
 :author: Yuce Tekol <yucetekol AT yahoo DOT com>
-:status: Incomplete
+:status: Almost complete
 
 Introduction
 ------------
@@ -19,15 +19,15 @@ Syntax
 
 (Note: I am borrowing some Cheetah terminology here.)
 
-Biz templating system offers two basic tools for the template writer,
-*placeholders* and *directives*.
+Biz templating system offers three basic tools for the template writer,
+*placeholders*, *directives* and *code-blocks*
 
 
 Placeholders
 ............
 
 Placeholders are filled with corresponding values in the namespace, they are
-denoted by ``$placeholder`` or ``${placeholder}``, placeholder should be a
+denoted by ``$placeholder`` or ``${placeholder}``, a placeholder should be a
 legal Python identifier. Consider the following template::
 
   <a href="$link.target">$link.name</a>
@@ -42,6 +42,10 @@ You can use ``${placeholder}`` notation to tell the placeholder unambiguosly::
 
   Biz ${what}page
 
+It is legal to use *square brackets* as part of a placeholder::
+
+    $users[5]
+
 
 Directives
 ..........
@@ -53,7 +57,8 @@ one-liners.
 
 A *header* directive marks the beginning of a block. The block is made of one
 or more lines of source which are processed to create output. Header directive
-starts with ``{%``, ...::
+starts with ``{%``, after the block it ends with ``%}``, no text (except
+whitespace) should be present before ``{%`` and after ``%}``::
 
     <table>
     {% for link in links
@@ -62,18 +67,146 @@ starts with ``{%``, ...::
             <td>$link.description</td>
         </tr>
     %}
+    </table>
 
-Chain directives maybe used to create linked blocks, such as
-``if..elif..else``::
+In the example above, ``{% for link in links`` is the header directive, the
+block starting after it and ending with ``%}`` is repeated for each link. Note
+that the header **does not** end with a colon (``:``).
+
+*Chain* directives maybe used to create linked blocks, such as
+``if..elif..else``.A chain directive starts and ends like a header directive,
+the intermediate conditions are written between ``%}`` and ``%{``, no other
+text (except whitespace) should be present before ``%}`` and after ``%{``::
 
     {% if grade > 80
         A 
-    %} elif grade > 60 %{
+    %} elif grade > 60 {%
         B 
-    %} else %{
+    %} else {%
         C
     %}
 
+In the example above, ``if grade > 80`` is the header line, ``elif grade > 60``
+and ``else`` are intermediate conditions; note that none of them ends with a
+colon (``:``).
 
-[TO BE COMPLETED]
+*Oneliners* are one lined Python statements. A oneliner starts with ``{%`` and
+ends with ``%}``::
+    
+    {% a = 10; x = a ** 2 %}
+
+
+Code-blocks
+...........
+
+While developing Biz, we are trying to separate logic from presentation as much
+as we can, but some people are very comfortable with putting logic in a
+template in the PHP-sense. It is possible to accomplish that by using many
+directives, but it may become too complex, or ugly. Biz templating system
+supports code-blocks using an alternate syntax, any code you write between
+``{?`` and ``?}`` are run as Python code::
+
+    {?
+        class Person:
+            def __init__(self, name, age):
+                self.name = name
+                self.age = age
+
+        names = ["Ali", "Gulhan", "John", "Mary"]
+        ages = [9, 24, 32, 19]
+        people = [Person(*z) for z in zip(names,ages)]
+    ?}
+
+Note that, currently only *tab indented* code-blocks are supported (in the near
+future this will change).
+
+
+Extra Functions
+---------------
+
+Biz templating system supplies (currently) three extra functions to the
+template designer, ``_echo``, ``_include`` and ``_loadbody``.
+
+
+_echo
+.....
+
+``_echo`` function takes an arbitrary number of arguments, converts them to
+string and adds their content to the output::
+
+    {% _echo("Hello", "World!", 123 %}
+
+Outputs::
+    
+    HelloWorld!123
+
+Of course, you may pass variables::
+
+    {% msg = "Hello, World!"; number = 42 %}
+    {% _echo(msg, number) %}
+
+Outputs::
+    
+    Hello, World!42
+    
+``_echo`` is used internally to output non-code parts of the template and you
+will almost never need it; for instance, the template above can be written more
+naturally, like this::
+
+    {% msg = "Hello, World!"; number = 42 %}
+    $msg$number
+
+
+_include
+........
+
+This function takes a file name, interprets it and appends its output to the
+output of the template.
+
+Consider the following example; suppose that ``inner.tmpl`` has the following
+content::
+
+    {% if number == 42
+        Hmm, you found the number...
+    %} else {%
+        Sorry, you couldn't find the number...
+    %}
+
+And ``outer.tmpl`` has this::
+
+    {% number = 43 %
+    {% _include("inner.tmpl") %}
+
+Then, the output of this template will be::
+
+    Sorry, you couldn't find the number...
+    
+
+_loadbody
+.........
+
+``loadbody`` takes the name of an HTML-like file, extracts the content between
+``<body>`` and ``</body>`` and *returns* it; you should save it in a variable,
+and output the variable.
+
+The ``inner.html`` file contains::
+    
+    <html>
+        <head><title>Useless</title></head>
+        <body>This is useful.</body>
+    </html>
+
+The example template is::
+    
+    I can say that:
+    {% body = _loadbody("inner.html") %}
+    $body
+
+Outputs::
+    
+    I can say that:
+    This is useful.
+
+        
+[TODO: Add conclusions and related material here.]
 

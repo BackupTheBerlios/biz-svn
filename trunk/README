@@ -25,13 +25,13 @@ We are in the *pre-alpha* stage right now, things are in flux, the API is
 changing weekly, and there is not much documentation; but this is no excuse for
 you not to try **Biz** :).
 
-Biz is licensed under **GPL**, you may see the license text in the ``LICENSE``
+Biz is licensed under **GPL**, you may see the license in the ``LICENSE``
 file.
 
 Have a look at  ``INSTALL`` file for information on installing/uninstalling Biz
 on your system. Biz is being tested on the following platforms regularly:
 
-* Ubuntu Breezy Badger *(development)* <http://www.ubuntulinux.org>
+* Ubuntu 6.06 (Dapper) *(development)* <http://www.ubuntulinux.org>
 * Pardus 1.0 <http://www.uludag.org.tr>
 * FreeBSD 6.0 <http://www.freebsd.org>
 * Windows XP Professional (Turkish)

@@ -3,8 +3,8 @@
 Biz Tutorial
 ============
 
-:version: 0.0.1-0.0.33
-:date: 2006-06-01
+:version: 0.0.2-0.0.37
+:date: 2006-06-24
 :author: Yüce Tekol <http://www.geocities.com/yucetekol>
 :status: Incomplete
 
@@ -20,7 +20,18 @@ Please see ``INSTALL`` text in the source distribution.
 Creating and Running Your First Biz Project
 -------------------------------------------
 
-[TO BE WRITTEN]
+In this section, we 
+
+Biz includes a basic utility called *Bizadmin* to assist you in creating Biz
+projects. On UNIX-like systems, the utility is automatically installed under
+``usr/bin`` or ``usr/local/bin``; and on Win32 it is installed under Python
+script directory, in the latter case, you should be sure it is *on the path*
+(see ``INSTALL``).
+
+Bizadmin is currently usable only from a terminal/console, in the future this
+might change.
+
+That's enough prelude, let's begin. In 
 
 
 Biz Applications
@@ -30,16 +41,16 @@ First let's define what a **Biz application** is,
 
   An application *in the Biz sense* is a Python module that gets a *request*
   and sends a *response*; it is attached to the first word of the URL path. For
-  example, in the URL, \http://www.company.com/TheProduct?format=html, **wiki**
-  is an application that gets ``TheProduct`` as an argument and a keyword
-  argument ``format`` with a value ``html``. If there is no path in the URL,
-  such as \http://www.company.com, the *index* application is invoked.
+  example, in the URL, \http://www.company.com/wiki/TheProduct?format=html,
+  **wiki** is an application that gets ``TheProduct`` as an argument and a
+  keyword argument ``format`` with a value ``html``. If there is no path in the
+  URL, such as \http://www.company.com, the *index* application is invoked.
 
 
 Biz Applications By Configuration
 .................................
 
-Reusability on the application level is the foremost priority of Biz; a person
+Reusablity on the application level is the foremost priority of Biz; a person
 should be able to add/remove web applications from his/her site as quickly and
 easily as possible, by modifying a configuration file or just using an
 administration interface. Biz tries to satisfy this aim by splitting an
@@ -59,7 +70,7 @@ package, so we use the ``module`` option to tell its place. The section name
 
 We should also inform Biz about the place of this configuration file, and under
 which name it will be attached to the URL. Assuming the application
-configration is saved under ``cfg`` as ``files.ini``, it is enough to add the
+configuration is saved under ``cfg`` as ``files.ini``, it is enough to add the
 following line to ``biz.ini`` (in the project root directory) under
 ``[applications]`` section::
 
@@ -95,10 +106,11 @@ Let's have a look at the simplest application below::
         return HelloApp(x)
 
 In the example, we derived ``HelloApp`` from ``Application``; by doing so, we
-leave a lot of dirty work like setting the response code, content type, etc to
-Biz. ``r`` is one of the three special handler properties. For now, you can
-think of ``Handler`` as the default entry point. The ``load`` function is
-required by the *root* in order to find the application to invoke.
+left a lot of dirty work like setting the response code, content type, etc to
+Biz. ``r`` is one of the three special handler properties (See *special
+properties*). For now, you can think of ``Handler`` as the default entry point.
+The ``load`` function is required by the *root* in order to find the
+application to invoke.
 
 Save the code under the directory ``apps`` in the project directory as
 ``hello.py``. Next, we need a configuration file, save the following under
@@ -108,12 +120,12 @@ Save the code under the directory ``apps`` in the project directory as
     path=apps/hello.py
 
 The last thing we are going to do is telling the mount point and the location
-of the configuration file to Biz. Open the file ``biz.ini`` in the projecr root
+of the configuration file to Biz. Open the file ``biz.ini`` in the project root
 directory, and add the following line under ``[application]`` section::
 
     hello: cfg/hello.ini
 
-Now we are set. If the server is running stop and restart it. Fire your web
+Now we are set. If the server is running, stop and restart it. Fire your web
 browser and navigate to http://localhost:8000/hello (if you didn't change the
 defaults). You should be seeing a warm but useless *Hello, World!* message.
 
@@ -134,8 +146,7 @@ following Python function::
 
 This function finds the sum of its arguments (after converting them to float)
 and prints the result; if a keyword argument ``hex=True`` is passed, it prints
-the result in hexadecimal (of course then it prints the result as integer). We
-could call this function as::
+the result in hexadecimal. We could call this function as::
 
     >>> fun(1.2, 10, 20)
     Sum is: 31.200000
@@ -148,11 +159,11 @@ Now, consider the following URL::
     http://localhost:8000/fun/1.2/10/20?hex=True
 
 Can you see the similarity between this and the second function call? *Path
-info* becomes the positional arguments, and *query info* becomes the keyword
-arguments. When invoked, an application gets these arguments in the request.
-Let's write a Biz application to see what is passed to it as arguments. We call
-our application ``printargs``, save the following under ``apps`` as
-``printargs.py``::
+info* (``/fun/1.2/10/20``) becomes the positional arguments, and *query info*
+(``?hex=True``) becomes the keyword arguments. When invoked, an application
+gets these arguments in the request. Let's write a Biz application to see what
+is passed to it as arguments. We call our application ``printargs``, save the
+following under ``apps`` as ``printargs.py``::
 
     from biz import *
 
@@ -164,18 +175,20 @@ our application ``printargs``, save the following under ``apps`` as
 
                 # prepare the content
                 content = []
-                content.append("(Positional) Arguments")
+                content.append("<b>(Positional) Arguments</b>")
                 content.extend(path.args)
-                content.append("Keyword Arguments")
+                content.append("<b>Keyword Arguments</b>")
                 content.extend(["%s=%s" % kv for kv in
                                     path.kwargs.iteritems()])
 
                 # Let's send them in the response
-                self.r.content = TextContent("\n".join(content))
+                self.r.content = HtmlContent("<br>\n".join(content))
+
 
     def load(x):
         return PrintArgsApp(x)
 
+[TO BE COMPLETED]
 
 
 Looking Further...

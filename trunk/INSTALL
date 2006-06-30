@@ -13,7 +13,6 @@ basic usage.
 Biz is regularly being tested on the following platforms:
 
 * Ubuntu 6.06 (Dapper) *(development)* <http://www.ubuntulinux.org>
-* Ubuntu 5.10 (Breezy) *(development)* 
 * Pardus 1.0 <http://www.uludag.org.tr>
 * FreeBSD 6.0 <http://www.freebsd.org>
 * Windows XP Professional SP2 (Turkish)
@@ -39,6 +38,7 @@ Installing From Source
 Assuming you have ``biz-X.X.X.tar.gz`` or ``biz-X.X.X.zip``,
 
 1) Extract the file
+
     A. If it is a tar.gz file,
 
         a) on UNIX-like platforms, open a terminal and type (``$`` is the
@@ -46,7 +46,8 @@ Assuming you have ``biz-X.X.X.tar.gz`` or ``biz-X.X.X.zip``,
 
             $ tar xzvf biz-X.X.X.tar.gz
 
-        b) on Windows, use a program that can handle it, such as 7zip_.
+        b) on Windows, use a program that can handle it,
+        such as 7zip_.
 
     B. If it is a zip file,
 
@@ -55,7 +56,7 @@ Assuming you have ``biz-X.X.X.tar.gz`` or ``biz-X.X.X.zip``,
 
             $ unzip biz-X.X.X.zip
 
-        b) on Windows, right-click on the file and choose, ``Extract All...``,
+        b) on Windows, right-click on the file and choose, "Extract All...",
         follow the wizard.
 
 
@@ -77,8 +78,8 @@ Installing the RPM
 Installing Using Win32 Installer
 --------------------------------
 
-1) Run the ``biz.X.X.X.exe`` and follow the wizard.
+1) Double click on ``biz-X.X.X.exe`` and follow the wizard.
 
-2) Make sure Python script directory is on the path. [Details TO BE WRITTEN]
+2) Make sure Python script directory (``C:\Python24\Scripts``) is on the path. [Details TO BE WRITTEN]
 
 

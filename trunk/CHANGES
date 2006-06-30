@@ -2,16 +2,11 @@
 CHANGES
 =======
 
-Package
--------
+0.0.38
+------
 
-* 2006-05-10 (ytekol) Setup via distutils.
-* 2006-05-10 (ytekol) Package layout changed.
-* 2006-05-09 (ytekol) README added.
-* 2006-05-08 (ytekol) CHANGES added.
+    * 2006-06-24 (ytekol): Default project unpacker now restores permissions
+      (UNIX).
 
-Root
------
-* 2006-05-08 (ytekol) application load mechanism extended, now class can be specified
-			in application's configuration file.
+    * 2006-06-24 (ytekol): Documentation is improved.
 

@@ -1,5 +1,6 @@
 # cgirun -- Run Biz root in a CGI script
 # Note that, this is extremely inefficient; (more than 10x slower)
+# DO NOT USE!!! Not supports sessions!
 
 import os
 import sys

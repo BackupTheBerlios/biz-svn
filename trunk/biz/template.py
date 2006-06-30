@@ -1,4 +1,7 @@
+# -*- coding: utf-8 -*-
 # template.py -- Biz templating
+# This templating system is initially based on Tomer Filiba's "templite",
+# ... http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/496702
 
 # Biz web application framework
 # Copyright (C) 2006  Yuce Tekol
@@ -128,7 +131,7 @@ class Template:
 			namespace = self.variables
 			exec code in namespace
 			
-		self.variables["_emit"] = emitter
+		self.variables["_echo"] = emitter
 		self.variables["_loadbody"] = loadbody
 		self.variables["_include"] = include
 		
@@ -209,7 +212,7 @@ class Template:
 				return "'''%s'''" % v
 				
 		values = [q(*iv) for iv in enumerate(self.variable.split(value))]
-		output = "%s_emit(%s)" % ("\t"*level,", ".join(values))
+		output = "%s_echo(%s)" % ("\t"*level,", ".join(values))
 		return (level,output)
 		
 	def walk(self, parsed):

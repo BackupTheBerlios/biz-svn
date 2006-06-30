@@ -70,10 +70,13 @@ def unpack(dirname, callback=None):
 
 		if callback:
 			callback(filename)
+			
+		mode = zipf.getinfo(name).external_attr >> 16
 
 		f = file(filename, "wb")
 		f.write(data)
 		f.close()
+		os.chmod(filename, mode)
 
 	zipf.close()
 	fakefile.close()

@@ -1,7 +1,7 @@
 #! /bin/bash
 # Creates Biz documentation
 
-files="tutorial routing overview templating"
+files="tutorial routing overview templating specialprops"
 
 for f in $files
 do
