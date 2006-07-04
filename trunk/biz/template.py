@@ -113,7 +113,7 @@ class Template:
 		self.changed = True
 		
 		def emitter(*args):
-			self._outlist.extend([str(a) for a in args])
+			self._outlist.extend([unicode(a, "utf-8") for a in args])
 			
 		def loadbody(filename):
 			f = file(filename)  # XXX: try/except here
@@ -146,7 +146,7 @@ class Template:
 			namespace = self.variables  #.copy() # XXX:
 			
 			exec code in namespace
-			self.output = "".join(self._outlist)
+			self.output = u"".join(self._outlist)
 			
 			self.changed = False
 			
@@ -159,10 +159,17 @@ class Template:
 		self.changed = True
 		
 	@staticmethod
-	def from_file(filename):
+	def open(fileobj):
+		"""
+		loads a template from a file. ``fileobj`` can be either a string, specifying
+		a filename, or a file-like object, supporting read() directly
+		"""
+		
+		if isinstance(fileobj, basestring):
+			fileobj = file(fileobj)
+		
 		try:
-			f = file(filename)
-			return Template(f.read())
+			return Template(fileobj.read())	
 		except IOError, e:
 			raise TemplateNotFoundError("filename", msg=e)
 		
@@ -172,14 +179,13 @@ class Template:
 		template.parsed = parsed  # XXX: parsed is copied shallowly
 		return template
 		
-	def copy(self, onlyparsed=False):
-		if onlyparsed:
-			return self.from_parsed(self.parsed)
-		else:
-			template = self.from_parsed(self.parsed)
-			template.variables = self.variables.copy()
-			
-			return template
+	def copy(self):
+		return self.from_parsed(self.parsed)
+		
+	def copyall(self):
+		template = self.from_parsed(self.parsed)
+		template.variables = self.variables.copy()
+		return template			
 			
 	def update(self, dictionary):
 		self.variables.update(dictionary)
@@ -257,10 +263,13 @@ if __name__ == "__main__":
 	</body>
 	{?
 	if 10 > 5:
-		print "hello"
+		value = 5
+	else:
+		value = 10
 	?}
+	$value
 </html>
 """
 	template = Template(test)
 	template["people"] = dict(gugu=24, aliyanki=13)
-	print str(template)
+	print template

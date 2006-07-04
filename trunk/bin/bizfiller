@@ -16,10 +16,10 @@ def main():
 		
 	filename = argv[1]
 	argsdict = dict([ev(kv) for kv in argv[2:]])
-	template = Template.from_file(filename)
+	template = Template.open(filename)
 	template.update(argsdict)
 	
-	print str(template)
+	print unicode(template)
 	
 if __name__ == "__main__":
 	main()

@@ -3,7 +3,7 @@
 Biz Templating
 ==============
 
-:version: 0.0.90-0.0.37
+:version: 0.0.90-0.0.38
 :date: 2006-06-24
 :author: Yuce Tekol <yucetekol AT yahoo DOT com>
 :status: Almost complete
@@ -206,6 +206,12 @@ Outputs::
     
     I can say that:
     This is useful.
+
+
+Instantiating Templates
+-----------------------
+
+``Template`` class is found in ``biz.template`` module; it takes 
 
         
 [TODO: Add conclusions and related material here.]

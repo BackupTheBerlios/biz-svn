@@ -145,6 +145,7 @@ def run(root):
 	sa = httpd.socket.getsockname()
 	
 	print "Serving HTTP on", sa[0], "port", sa[1], "multithread=%d" % ops.multithread, "..."
+	print "To terminate, press 'Ctrl+C' (UNIX) or 'Ctrl+Break' (Win32)"
 	try:
 		if count:
 			for i in range(count):

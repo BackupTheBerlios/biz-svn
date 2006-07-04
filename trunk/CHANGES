@@ -2,6 +2,16 @@
 CHANGES
 =======
 
+0.0.39
+------
+
+    * 2006-07-01 (ytekol): Built-in ``Template`` class's ``copy`` method now
+      takes *no* parameters and equivalent to the old ``copy(True)``. For the
+      old ``copy(False``, there is a distinct method, ``copyall``.
+
+    * 2006-07-01 (ytekol): Built-in ``Template`` class now supports ``open``
+      method which accepts both a filename or a file-like object.
+
 0.0.38
 ------
 
