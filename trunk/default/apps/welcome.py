@@ -8,18 +8,18 @@ class DumbHandler(ArgHandler):
 	def dynamic(self):
 		q = self.q
 		
-		template = q.template.copy(True)
+		template = q.template.copy()
 		template["pagemode"] = self.pagemode
 		template["pagetitle"] = self.pagetitle
 		
-		self.r.content = HtmlContent(str(template))
+		self.r.content = HtmlContent(template)
 		
 
 class WelcomeApp(Application):
 	def static(self):
 		q = self.q
 		
-		q.template = Template.from_file("templates/welcome/page.tmpl")
+		q.template = Template.open("templates/welcome/page.tmpl")
 		self._files_Handler = FileHandler
 		q._files_Handler = dict(location="htdocs/welcome")
 	
