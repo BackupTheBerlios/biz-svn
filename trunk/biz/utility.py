@@ -113,4 +113,31 @@ class CookieJar:
 		
 	def getlist(self):
 		return [str(v) for v in self.cookies.values()]
+
+
+class DataGroup(dict):
+	def __init__(self, **kwargs):
+		def notfound(k):
+			self.missing.add(k)
+			return ""
 			
+		st = self.__setitem__
+		self.missing = set()
+		for k, v in kwargs.iteritems():
+			if isinstance(v, list):
+				for vv in v:
+					val = vv.get(k)
+					if val:
+						st(k, val)
+						break
+				else:
+					st(k, notfound(k))
+			else:
+				st(k, v.get(k) or notfound(k))
+
+
+from cgi import FieldStorage
+
+class BizFieldStorage(FieldStorage):
+	get = FieldStorage.getfirst
+

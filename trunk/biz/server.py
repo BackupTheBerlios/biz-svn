@@ -23,6 +23,7 @@ class ServerHandler(SimpleHandler):
 
 	def close(self):
 		try:
+			pass
 			self.request_handler.log_request(
 				self.status.split(' ',1)[0], self.bytes_sent
 			)

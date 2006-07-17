@@ -2,6 +2,17 @@
 CHANGES
 =======
 
+0.0.41
+------
+    
+    * 2006-07-15 (ytekol): ``FunRoot`` and ``MiniRoot`` roots.
+    * 2006-07-15 (ytekol): ``TemplateHandler``.
+    * 2006-07-15 (ytekol): ``DataGroup`` for obtaining data from any source
+      (POST, GET, session, cookies, etc.) that has a dict-like interface.
+    * 2006-07-15 (ytekol): ``XmlContent``.
+    * 2006-07-15 (ytekol): Better unicode support???
+    * 2006-07-15 (ytekol): ``FunApplication``.
+
 0.0.39
 ------
 

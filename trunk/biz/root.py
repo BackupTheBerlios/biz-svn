@@ -19,13 +19,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 
-## try:
-## 	import psyco
-## except ImportError, e:
-## 	print e
-## else:
-## 	psyco.profile()
-	
 import imp
 import time
 import os
@@ -33,11 +26,10 @@ import os.path
 from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 from Cookie import SimpleCookie
 import urllib
-from cgi import FieldStorage
 import threading
 
 from biz.app import Application
-from biz.utility import Struct, Heads, CookieJar
+from biz.utility import Struct, Heads, CookieJar, BizFieldStorage
 from biz.content import TextContent
 from biz.response import Response
 from biz.session import SessionManager, SessionError
@@ -49,7 +41,8 @@ sessionman_lock = threading.Lock()
 applist_lock = threading.Lock()
 
 _ = lambda s: s
-
+	
+	
 
 class ApplicationInfo(object):
 	__slots__ = ("name","mpath","cpath",
@@ -300,7 +293,7 @@ class Root:
 		
 		# use Python's ``cgi`` module to parse contents of POST
 		try:
-			xenviron.fields = FieldStorage(environ=environ,
+			xenviron.fields = BizFieldStorage(environ=environ,
 						fp=environ["wsgi.input"])
 		except KeyError:
 			raise WSGIKeyNotPresentError("wsgi.input")

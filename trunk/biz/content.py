@@ -22,7 +22,7 @@ import os
 from cStringIO import StringIO
 import mimetypes
 
-__all__ = ["EmptyContent", "TextContent", "HtmlContent", 
+__all__ = ["EmptyContent", "TextContent", "HtmlContent", "XmlContent",
 			"FileContent", "CachedFileContent"]
 
 
@@ -44,8 +44,9 @@ class Content(object):
 class TextContent(Content):
 	__slots__ = "content","encoding"
 	
-	def __init__(self, content, encoding="utf-8"):
-		Content.__init__(self, "text/plain")
+	def __init__(self, content, ctype="", encoding="utf-8"):
+		ctype = "%s; charset=%s" % (ctype or "text/plain",encoding)
+		Content.__init__(self, ctype)
 		
 		self.content = unicode(content)
 		self._clen = len(self.content)
@@ -62,10 +63,20 @@ class EmptyContent(TextContent):
 
 class HtmlContent(TextContent):
 	def __init__(self, content, encoding="utf-8"):
-		TextContent.__init__(self, content, encoding)
-		self.ctype = "text/html"
-		
-		
+		TextContent.__init__(self, content, "text/html", encoding)
+
+
+class XmlContent(TextContent):
+	def __init__(self, content, encoding="utf-8"):
+		TextContent.__init__(self, content, "text/xml", encoding)
+
+
+## class XHtmlContent(TextContent):
+## 	def __init__(self, content, encoding="utf-8"):
+## 		TextContent.__init__(self, content, "text/xhtml", encoding)
+		self.ctype = "text/xhtml"
+
+
 class FileContent(Content):
 	__slots__ = "_descriptor"
 

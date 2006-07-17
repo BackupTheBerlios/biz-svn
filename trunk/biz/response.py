@@ -100,17 +100,18 @@ class Response:
 	def __init__(self, response):
 		# this try/except block is for functions that can not provide a
 		# ... response with cookies and/or sessions
+		r = response
 		try:
-			cookies = response.cookies
-			cookies.modify(response.session.sidcookie)
+			cookies = r.cookies
+			cookies.modify(r.session.sidcookie)
 			response.heads.set_cookie = cookies.getlist()
 		except AttributeError:
 			pass
 			
-		response.heads.content_type = response.content.ctype
-		response.heads.content_length = response.content._clen
+		r.heads.content_type = r.content.ctype
+		r.heads.content_length = r.content._clen
 		
-		self.response = response
+		self.response = r
 
 	def get_forwsgi(self):
 		r = self.response

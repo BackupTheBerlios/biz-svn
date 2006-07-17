@@ -6,18 +6,17 @@ from biz.content import FileContent
 
 class FileHandler(ArgHandler):
 	def dynamic(self):
-		q = self.q
+		q = self.q; r= self.r
 		assert "location" in q[self.name]
 		
-		args = self.r.path.args
+		args = r.path.args
 		
 		filename = os.path.join(q[self.name]["location"], *args)
-		print filename
 		
 		if os.path.isdir(filename):
-			self.r.code = 404
+			r.code = 404
 			return
 		
-		self.r.content = FileContent(filename)
+		r.content = FileContent(filename)
 		
 		

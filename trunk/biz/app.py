@@ -26,7 +26,7 @@ from biz.errors import *
 from biz.content import TextContent, EmptyContent
 
 __all__ = ["ArgHandler", "CompositeArgHandler",
-			"Application", "StaticApplication"] ##, "SecureApplication"]
+			"Application", "StaticApplication", "FunApplication"]
 
 
 # TODO: Needs i18n here
@@ -94,6 +94,7 @@ class Application:
 		self.q = Struct()
 		self.q.options = xenviron.options
 		self.q.scriptname = xenviron.path.scriptname
+		self.q.appname = self.name
 		try:
 			self.static()
 		except Exception, e:
@@ -142,6 +143,42 @@ class Application:
 			r.content = TextContent(_(u"%s not found") % \
 							r.path.args)
 
+
+class FunApplication(Application):
+	def __init__(self, xenviron):
+		self.Handler = None
+		Application.__init__(self, xenviron)
+		
+	def __call__(self, request):
+		args = request.path.args[1:]
+		kwargs = request.path.kwargs
+		
+		if len(args) > 0 and hasattr(self, args[0]):
+			funname = args[0]
+			args = args[1:]
+		else:
+			funname = "__index__"
+		
+		del request.path
+		request.heads = Heads()
+		request.code = 200
+		try:
+			return getattr(self, funname)(request, *args, **kwargs)
+		except TypeError:
+			return self.__error__(request, u"Method signature mismatch")
+		
+	def __index__(self, r, *args):
+		r.code = 404
+		r.content = TextContent(_(u"funapp default") % \
+						args)
+		return r
+		
+	def __error__(self, r, msg):
+		r.code = 500
+		r.content = TextContent(msg)
+		
+		return r
+		
 
 class StaticApplication:
 	pass

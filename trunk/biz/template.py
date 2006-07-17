@@ -113,7 +113,7 @@ class Template:
 		self.changed = True
 		
 		def emitter(*args):
-			self._outlist.extend([unicode(a, "utf-8") for a in args])
+			self._outlist.extend([unicode(str(a), "utf-8") for a in args])
 			
 		def loadbody(filename):
 			f = file(filename)  # XXX: try/except here
@@ -233,7 +233,7 @@ class Template:
 
 
 if __name__ == "__main__":
-	test = r"""
+	test = ur"""
 <html>
 	<body>
 		<table>
@@ -271,5 +271,5 @@ if __name__ == "__main__":
 </html>
 """
 	template = Template(test)
-	template["people"] = dict(gugu=24, aliyanki=13)
-	print template
+	template["people"] = {"gugu":24, u"ali yankı":13}
+	print template.render()
