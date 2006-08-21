@@ -47,8 +47,10 @@ class ArgHandler:
 		
 		try:
 			self.dynamic()
-		except Exception, e:
-			raise ApplicationDynamicError(e.args, where=self.name, source=__file__)
+		except KeyboardInterrupt:
+			raise
+## 		except Exception, e:
+## 			raise ApplicationDynamicError(e.args, where=self.name, source=__file__)
 		
 		return self.r
 		
@@ -95,10 +97,10 @@ class Application:
 		self.q.options = xenviron.options
 		self.q.scriptname = xenviron.path.scriptname
 		self.q.appname = self.name
-		try:
-			self.static()
-		except Exception, e:
-			raise ApplicationStaticError(e)
+##		try:
+		self.static()
+## 		except Exception, e:
+## 			raise ApplicationStaticError(e)
 
 	def static(self):
 		"""prepare static content
@@ -126,8 +128,10 @@ class Application:
 			request.path.args = _args
 			
 			response = handler(request)
-		except Exception, e:
-			raise ApplicationError(self.name, where=handler_name, info=e)
+		except KeyboardInterrupt:
+			raise
+## 		except Exception, e:
+## 			raise ApplicationError(self.name, where=handler_name, info=e)
 			
 		# assure that response is of type ``Struct``
 		if not isinstance(response, Struct):

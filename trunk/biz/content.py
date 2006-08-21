@@ -23,7 +23,7 @@ from cStringIO import StringIO
 import mimetypes
 
 __all__ = ["EmptyContent", "TextContent", "HtmlContent", "XmlContent",
-			"FileContent", "CachedFileContent"]
+			"FileContent", "CachedFileContent", "CachedContent"]
 
 
 class Content(object):
@@ -48,12 +48,18 @@ class TextContent(Content):
 		ctype = "%s; charset=%s" % (ctype or "text/plain",encoding)
 		Content.__init__(self, ctype)
 		
-		self.content = unicode(content)
+		assert isinstance(content, basestring), "content should be a string."
+		
+		if isinstance(content, unicode):
+			self.content = unicode.encode(content, encoding)
+		else:
+			self.content = content
+			
 		self._clen = len(self.content)
 		self.encoding = encoding
 		
 	def get(self):
-		return [self.content.encode(self.encoding)]
+		return self.content
 
 
 class EmptyContent(TextContent):
@@ -104,3 +110,16 @@ class CachedFileContent(Content):
 		return [self.content]
 
 
+class CachedContent(Content):
+	__slots__ = "content"
+	
+	def __init__(self, content, ctype):
+		Content.__init__(self, ctype)
+		self.content = content
+		self._clen = len(content)
+		
+	def get(self):
+		return [self.content]
+
+		
+		

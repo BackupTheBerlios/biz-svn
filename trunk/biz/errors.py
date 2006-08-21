@@ -32,7 +32,7 @@ def _(s):  # TODO: Replace this with a true i18n function
 class BizError(Exception):
 	def __init__(self, what, msg=None, **kwargs):
 		"""
-		* what : item caused the error.
+		* what : what caused the error.
 		* msg : error message.
 		* info : a dict.
 		"""

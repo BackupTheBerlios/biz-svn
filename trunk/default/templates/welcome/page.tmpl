@@ -38,9 +38,9 @@
 			</div>
           <div class="content">
 			{% if pagemode == "home"
-				{% body = _loadbody("htdocs/welcome/welcome.html") %}
+				{% body = loadbody("htdocs/welcome/welcome.html") %}
 			%} else {%
-				{% body = _loadbody("doc/%s.html" % pagemode) %}
+				{% body = loadbody("doc/%s.html" % pagemode) %}
 			%}
   
 			$body

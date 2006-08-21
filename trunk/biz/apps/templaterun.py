@@ -1,16 +1,15 @@
 
-from biz import *
+import biz
 from biz.template import Template
 
 
-class TemplateRunApp(Application):
+class TemplateRunApp(biz.Application):
 	def static(self):
 		q = self.q
-		options = q.options.main
-		assert options.has_key("template")
-		q.template = Template.open(options["template"])
+		assert q.options.has_key("template")
+		q.template = Template.open(q.options["template"])
 		
-	class Handler(ArgHandler):
+	class Handler(biz.ArgHandler):
 		def dynamic(self):
 			q = self.q
 			template = q.template.copy()
@@ -24,7 +23,7 @@ class TemplateRunApp(Application):
 			else:
 				template["baseloc"] = "/%s" % q.appname
 				
-			self.r.content = HtmlContent(template)
+			self.r.content = biz.HtmlContent(template.render())
 			
 			
 def load(x):

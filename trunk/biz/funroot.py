@@ -14,7 +14,9 @@ _ = lambda s: s
 
 
 class FunRoot(object):
-	__slots__ = ["sessionman", "meltscriptname"]
+	__slots__ = ["sessionman", "meltscriptname", "r"]
+	r = threading.local()
+	
 	def __init__(self, **kwargs):
 		self.sessionman = SessionManager()
 		self.meltscriptname = kwargs.get("meltscriptname", False)
@@ -28,7 +30,9 @@ class FunRoot(object):
 		except KeyError:
 			path_info = ""
 		
-		r = Struct()
+##		self.r = r
+##		r = Struct()
+		r = self.r
 		r.path = Struct()
 		r.path.endswithslash = path_info.endswith("/")
 		
@@ -48,8 +52,8 @@ class FunRoot(object):
 		else:
 			r.path.scriptname = ""
 			
-		kwargs = dict([(x[0],x[1][0])
-			for x in parse_qsl(environ["QUERY_STRING"], True)])
+		kwargs = dict([(x[0],x[1])
+			for x in parse_qsl(environ["QUERY_STRING"], keep_blank_values=True)])
 		
 		r.cookies = CookieJar(environ.get("HTTP_COOKIE", ""))
 		r.env = environ
@@ -74,18 +78,21 @@ class FunRoot(object):
 		r.code = 200
 		
 		try:
-			response = getattr(self, appname)(r, *args, **kwargs)
+##			response = getattr(self, appname)(r, *args, **kwargs)
+			getattr(self, appname)(*args, **kwargs)
 		except TypeError, e:
 			response = getattr(self, "__error__")(r, e)
 		
 		try:
 			sessionman_lock.acquire()
 			# further process the app_xenviron
-			self.sessionman.update(response.session)
+##			self.sessionman.update(response.session)
+			self.sessionman.update(r.session)
 		finally:
 			sessionman_lock.release()
 
-		return self._prepare_response(start_response, Response(response))
+##		return self._prepare_response(start_response, Response(response))
+		return self._prepare_response(start_response, Response(r))
 		
 	def _prepare_response(self, start_response, response):
 		rc, rh, ct = response.get_forwsgi()

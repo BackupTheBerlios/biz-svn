@@ -7,49 +7,203 @@ import os.path
 import shutil
 from optparse import OptionParser
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 
 # TODO: Replace this with a true i18n function
 def _(s):
 	return s
+	
+app_template = """# Application: %(appname)s
+# Description: %(appdesc)s
+# Author(s): %(author)s
+# Auto-created on: %(datetime)s
+
+import biz
+
+
+class %(classname)s(biz.Application):
+	def static(self):
+		q = self.q
+		# put code that will run once below...
+		
+		# end.
+		
+	class Handler(biz.ArgHandler):
+		# This is the default handler,
+		# ... it will run when no suitable handler found.
+		def dynamic(self):
+			q = self.q; r = self.r
+			# put code for this handler below...
+			
+			# Don't forget to assign r.content !!!
+			# end.
+		
+		
+def load(x):
+	# This is required for correct initialization.
+	return %(classname)s(x)
+"""
+
+cfg_template = """# Application: %(appname)s
+# Description: %(appdesc)s
+# Author(s): %(author)s
+# Auto-created on: %(datetime)s
+
+[main]
+# These are the main options for this application.
+path=apps/%(modulename)s
+description=%(appdesc)s
+access=%(access)s
+visibility=%(visibility)s
+# hotplug=1
+"""
 
 def admin_create(options, args):
+	import getpass
 	import biz.default
+	from biz.userman import UserManager
 
 	def callback(path):
 		print _("Creating: %(path)s" % dict(path=path))
 
 	if len(args) < 1:
-		arg = raw_input("Project name: ")
+		arg = raw_input(_("Project name: "))
 		if not arg:
 			return False
 
 		args = [arg]
 
+	adminname = raw_input(_("Administrator username (default: admin): ")) or "admin"
+	adminpass = getpass.getpass(_("Administrator password: "))
+
 	for arg in args:
 		biz.default.unpack(arg, callback)
+		usersfname = os.path.join(arg, "admin", "users.db")
+		userman = UserManager(usersfname)
+		userman.add(adminname, adminpass)
+		userman.addgroup(adminname, ["admins"])
 
+
+	print
+	print _("%(appname)s is successfully created." % dict(appname=args[0]))
+	print _("Now you can `cd` to the project directory, and run the server.")
+	print _("The default application can be accessed at http://localhost:8000")
+	
+	return True
+	
+def app_new(options, args):
+	import string
+	import time
+	
+	validchars = "%s%s_" % (string.letters,string.digits)
+	
+	if len(args) < 1:
+		arg = raw_input(_("Project directory: "))
+		if not arg:
+			return False
+	else:
+		arg = args[0]
+			
+	path = os.path.normpath(os.path.join(os.getcwd(), arg))
+	if os.path.exists(os.path.join(path, "biz.ini")):
+		print _("Application will be added to the project at: %(project_dir)s.") \
+				% dict(project_dir=path)
+	else:
+		print _("`%(project_dir)s` does not contain a valid Biz project.") \
+				% dict(project_dir=path)				
+		return True
+			
+	appname = raw_input(_("Application name: ")) or "No named application."
+	appdesc = raw_input(_("Description: "))
+	author = raw_input(_("Author(s): "))
+	
+	classname_default = "".join([x for x in appname.title()
+			if x in string.letters])
+	classname = raw_input(_("Class name (default: %s): ") % \
+			classname_default) or classname_default
+			
+	modulename_default = "%s.py" % "".join([x for x in appname.lower()
+			if x in string.letters])
+	modulename = raw_input(_("Module filename (default: %s): ") % \
+			modulename_default) or modulename_default
+			
+	if not modulename.endswith(".py"):
+		modulename = "%s.py" % modulename
+		
+	modulepath = os.path.join(path, "apps", modulename)
+	if os.path.exists(modulepath) and not options.force_overwrite:
+		print _("%(modulepath)s exists. Choose another module filename or use" \
+				"--force-overwrite option to destroy the file.") % dict(modulepath=modulepath)				
+		return True
+			
+	cfgname_default = "%s.ini" % "".join([x for x in appname.lower()
+			if x in string.letters])
+	cfgname = raw_input(_("Configuration filename (default: %s): ") % \
+			cfgname_default) or cfgname_default
+			
+	cfgpath = os.path.join(path, "cfg", cfgname)
+	if os.path.exists(cfgpath) and not options.force_overwrite:
+		print _("%(cfgpath)s exists. Choose another configuration filename or use" \
+				"--force-overwrite option to destroy the file.") % dict(cfgpath=cfgpath)				
+		return True
+		
+	visibility = raw_input(_("Visibility ([v]isible, [i]nvisible. "
+			"default: invisible): ")) or "invisible"
+	if not visibility[0] in ["v", "i"] and not options.force_visibility:
+		print _("%(visibility)s is not a valid value. Choose a valid one, or use" \
+				"--force-visibility to override this behavior.") % dict(visibility=visibility)
+				
+	access = raw_input(_("Access rights (public, private. default: private): ")) or "private"
+	if not access[:2] in ["pu", "pr"] and not options.force_access:
+		print _("%(access)s is not a valid value. Choose a valid one, or use" \
+				"--force-access to override this behavior.") % dict(access=access)
+
+	dt = time.strftime("%Y-%m-%d %Z %H:%M:%S", time.localtime())
+	
+	print _("Saving: %(modulename)s") % dict(modulename=modulename)
+	f = file(modulepath, "w")
+	print>>f, app_template % dict(appname=appname, appdesc=appdesc, author=author,
+			classname=classname, datetime=dt)
+	f.close()
+	
+	print _("Saving: %(cfgname)s") % dict(cfgname=cfgname)
+	f = file(cfgpath, "w")
+	print>>f, cfg_template % dict(appname=appname, appdesc=appdesc, author=author,
+			modulename=modulename, datetime=dt, visibility=visibility,
+			access=access)
+	
+	print _("Note: The application should be mounted.")
+	
 	return True
 
 def main():
-	router = dict(create=admin_create)
-	usage = """%prog [options] command [project_name]
+	router = dict(create=admin_create, newapp=app_new)
+	usage = """%prog [options] command [parameters]
 commands:
-  create      creates a new project
+  create      creates a new project (create [project_name])
+  packapp     packs an application FIXME
+  newapp      create a new application (newapp [project_directory])
 	"""
 
 	opt = OptionParser(usage=usage,
 			version=__version__)
 	opt.add_option("-p", "--prefix", dest="prefix", default=None,
 			help="Change source prefix")
+	opt.add_option("--force-overwrite", dest="force_overwrite",
+			action="store_true", default=False)
+	opt.add_option("--force-visibility", dest="force_visibility",
+			action="store_true", default=False)
+	opt.add_option("--force-access", dest="force_access",
+			action="store_true", default=False)
 
 	options, args = opt.parse_args()
 
 	try:
-		result = router[args[0]](options, args[1:])
+		proc = router[args[0]]
 	except (KeyError, IndexError):
 		opt.print_help()
 	else:
+		result = proc(options, args[1:])
 		if not result:
 			opt.print_help()
 

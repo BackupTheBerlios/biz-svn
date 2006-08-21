@@ -12,7 +12,7 @@ class DumbHandler(ArgHandler):
 		template["pagemode"] = self.pagemode
 		template["pagetitle"] = self.pagetitle
 		
-		self.r.content = HtmlContent(template)
+		self.r.content = HtmlContent(template.render())
 		
 
 class WelcomeApp(Application):

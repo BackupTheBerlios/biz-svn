@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # session.py
 
 # Biz web application framework
@@ -18,12 +19,11 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 import time
-##from Cookie import SimpleCookie
 
 from utility import Struct, Cookie, CookieJar
 from biz.uuid import uuid_time
 
-SESSION_ID = "sid"
+SESSION_ID = "biz-sid"
 
 
 class SessionError(Exception):

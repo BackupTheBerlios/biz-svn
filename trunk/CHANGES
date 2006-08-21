@@ -2,6 +2,15 @@
 CHANGES
 =======
 
+0.0.42
+------
+
+    * 2006-08-19 (ytekol): Correct content-length for unicode strings.
+    * 2006-08-19 (ytekol): Template language improved.
+    * 2006-08-19 (ytekol): ``biz.catalog`` translation support.
+	* 2006-08-12 (ytekol): Default project has favicon.
+	* 2006-08-12 (ytekol): ``CachedContent``.
+
 0.0.41
 ------
     

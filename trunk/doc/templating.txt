@@ -3,7 +3,7 @@
 Biz Templating
 ==============
 
-:version: 0.0.90-0.0.38
+:version: 0.0.91-0.0.42
 :date: 2006-06-24
 :author: Yuce Tekol <yucetekol AT yahoo DOT com>
 :status: Almost complete
@@ -19,8 +19,8 @@ Syntax
 
 (Note: I am borrowing some Cheetah terminology here.)
 
-Biz templating system offers three basic tools for the template writer,
-*placeholders*, *directives* and *code-blocks*
+Biz templating system offers four basic tools for the template writer,
+*placeholders*, *functional-textblocks*, *directives* and *code-blocks*
 
 
 Placeholders
@@ -121,20 +121,58 @@ Note that, currently only *tab indented* code-blocks are supported (in the near
 future this will change).
 
 
+Functional-textblock
+.......................
+
+(*New in 0.0.42*)
+
+Sometimes we require the text in the template be dynamic, for example "Hello,
+World!" in English should be translated to "Merhaba, Dünya!" in Turkish.
+Supposing ``_()`` is our *translating* function, we can get the effect using::
+    
+    {% echo(_("Hello, World!")) %}
+
+But this is not very usable, especially if most of our template is
+translatable. You can use a **functional-textblock** instead, by writing
+everything between ``{:`` and ``:}``, note that we place the function between
+``{`` and ``:``::
+
+    {_:Hello, World!:}
+
+Now the text is more readable and easier to write. You can use any function in
+a functional-textblock. Assuming ``upper`` is a function that takes a string
+and converts it to uppercase (e.g., ``string.upper``), following textblock will
+output "HELLO, WORLD!"::
+
+    {upper:Hello, World!:}
+
+There is one special function ``=`` that interprets the string and ``echo`` 's
+the output::
+
+    {=:"%s!" % ", ".join(["Hello", "World"]):}
+
+The above line will also output "Hello, World!".
+
+It is also possible to leave out the function, the text will be echoed
+untouched then::
+
+    {:Hello, World!:}
+
+
 Extra Functions
 ---------------
 
 Biz templating system supplies (currently) three extra functions to the
-template designer, ``_echo``, ``_include`` and ``_loadbody``.
+template designer, ``echo``, ``include`` and ``loadbody``.
 
 
-_echo
+echo
 .....
 
-``_echo`` function takes an arbitrary number of arguments, converts them to
+``echo`` function takes an arbitrary number of arguments, converts them to
 string and adds their content to the output::
 
-    {% _echo("Hello", "World!", 123 %}
+    {% echo("Hello", "World!", 123 %}
 
 Outputs::
     
@@ -143,13 +181,13 @@ Outputs::
 Of course, you may pass variables::
 
     {% msg = "Hello, World!"; number = 42 %}
-    {% _echo(msg, number) %}
+    {% echo(msg, number) %}
 
 Outputs::
     
     Hello, World!42
     
-``_echo`` is used internally to output non-code parts of the template and you
+``echo`` is used internally to output non-code parts of the template and you
 will almost never need it; for instance, the template above can be written more
 naturally, like this::
 
@@ -157,7 +195,7 @@ naturally, like this::
     $msg$number
 
 
-_include
+include
 ........
 
 This function takes a file name, interprets it and appends its output to the
@@ -175,14 +213,14 @@ content::
 And ``outer.tmpl`` has this::
 
     {% number = 43 %
-    {% _include("inner.tmpl") %}
+    {% include("inner.tmpl") %}
 
 Then, the output of this template will be::
 
     Sorry, you couldn't find the number...
     
 
-_loadbody
+loadbody
 .........
 
 ``loadbody`` takes the name of an HTML-like file, extracts the content between
@@ -199,7 +237,7 @@ The ``inner.html`` file contains::
 The example template is::
     
     I can say that:
-    {% body = _loadbody("inner.html") %}
+    {% body = loadbody("inner.html") %}
     $body
 
 Outputs::
@@ -211,7 +249,8 @@ Outputs::
 Instantiating Templates
 -----------------------
 
-``Template`` class is found in ``biz.template`` module; it takes 
+``Template`` class is found in ``biz.template`` module.
+[TODO: Complete this]
 
         
 [TODO: Add conclusions and related material here.]

@@ -8,7 +8,7 @@ def main():
 	if sys.argv[1] == "-install":
 		pythonloc = os.path.join(sys.prefix, "python.exe")
 		scriptsdir = os.path.join(sys.prefix, "Scripts")
-		scripts = ["bizadmin", "bizfiller"]
+		scripts = ["bizadmin", "bizfiller", "bizcatalog"]
 		for script in scripts:
 			loc = os.path.join(scriptsdir, script)
 			batloc = "%s.bat" % loc

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # template.py -- Biz templating
-# This templating system is initially based on Tomer Filiba's "templite",
+# This templating system was initially based on Tomer Filiba's "templite",
 # ... http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/496702
 
 # Biz web application framework
@@ -26,6 +26,7 @@ from collections import deque
 
 from biz.errors import FileNotFoundError
 
+
 class TemplateNotFoundError(FileNotFoundError):
 	pass
 
@@ -36,9 +37,10 @@ class Parser:
 	onelinerline = re.compile(r"^\s*\{%(.*)%\}\s*$")
 	chainedline = re.compile(r"^\s*%\}(.*)\{%\s*$")
 	paragraph = re.compile(r"{\?(.*?)\?}", re.DOTALL)
+	trans = re.compile(r"{([\w=.]*):(.*?):}", re.DOTALL)
 	
-	TEXT, HEADER, END, CHAIN, ONELINER, = \
-		"text", "header", "end", "chain", "oneliner"
+	TEXT, HEADER, END, CHAIN, ONELINER, TRANS = \
+		"text", "header", "end", "chain", "oneliner", "trans"
 	
 	def __init__(self):
 		self.handlers = [("chain",self.chainedline),
@@ -61,7 +63,6 @@ class Parser:
 		
 	def handle_oneliner(self, groups):
 		code, = groups
-		
 		self.items.append((self.ONELINER,code.strip()))
 		
 	def handle_text(self, text):
@@ -69,45 +70,54 @@ class Parser:
 	
 	def parse(self, lines):
 		text = []
+		lines = unicode(lines, "utf-8")
 		
-		for i, t in enumerate(self.paragraph.split(lines)):
+		for i, text1 in enumerate(self.paragraph.split(lines)):
 			# handle paragprah, {? ... ?}
 			if i%2:
-				ts = [x for x in t.split("\n") if x.strip()]
+				ts = [x for x in text1.split("\n") if x.strip()]
 				margin = len(ts[0]) - len(ts[0].lstrip())
 				for l in ts:
 					self.items.append((self.ONELINER,l[margin:]))
 			else:
-				for line in t.split("\n"):
-					if not line:
-						continue
-						
-					for handler, parser in self.handlers:
-						r = parser.search(line)
-						if r:
-							if text:
-								self.handle_text(text)
-								text = []
-								
-							getattr(self, "handle_%s" % handler)(r.groups())
-							break
+				for j, text2 in enumerate(self.trans.split(text1)):
+					if j%3 == 1:
+						n = text2
+					elif j%3 == 2:
+						self.items.append((self.TRANS,(n,text2)))
 					else:
-						text += "%s\n" % line
-				
-				if text:
-					self.handle_text(text)
-					text = []
+						auglines = text2.split("\n")
+						auglines = ["%s\n" % x for x in auglines[:-1]] + [auglines[-1]]
+						for line in auglines:
+## 							if not line:
+## 								continue
+								
+							for handler, parser in self.handlers:
+								r = parser.search(line)
+								if r:
+									if text:
+										self.handle_text(text)
+										text = []
+										
+									getattr(self, "handle_%s" % handler)(r.groups())
+									break
+							else:
+								text.append(line)
+						
+						if text:
+							self.handle_text(text)
+							text = []
 
 
 class Template:
 	variable = re.compile(r"\$[{]?([a-zA-Z][\w.]*(?:\[[\w.]\])*)[}]?")
 	body = re.compile(r"<body>(.*)</body>", re.DOTALL | re.MULTILINE)
 
-	def __init__(self, tmpl):
+	def __init__(self, tmpl, variables=None):
 		self.levels = deque()
 		self.levels.append(0)
 
-		self.variables = {}
+		self.variables = variables and dict(variables) or {}
 		self._outlist = []
 		self.output = tmpl
 		self.changed = True
@@ -131,9 +141,11 @@ class Template:
 			namespace = self.variables
 			exec code in namespace
 			
-		self.variables["_echo"] = emitter
-		self.variables["_loadbody"] = loadbody
-		self.variables["_include"] = include
+		self.variables["echo"] = emitter
+		self.variables["loadbody"] = loadbody
+		self.variables["include"] = include
+		self.variables["_"] = lambda s: s
+		self.variables["N_"] = lambda s: s
 		
 		parser = Parser()
 		parser.parse(tmpl)
@@ -142,7 +154,7 @@ class Template:
 	def render(self, force=False):
 		if force or self.changed:
 			self._outlist = []
-			code = "\n".join(self.walk(self.parsed))
+			code = u"\n".join(self.walk(self.parsed))
 			namespace = self.variables  #.copy() # XXX:
 			
 			exec code in namespace
@@ -150,7 +162,7 @@ class Template:
 			
 			self.changed = False
 			
-		return self.output
+		return unicode.encode(self.output, "utf-8")
 		
 	__str__ = render
 		
@@ -159,7 +171,7 @@ class Template:
 		self.changed = True
 		
 	@staticmethod
-	def open(fileobj):
+	def open(fileobj, variables=None):
 		"""
 		loads a template from a file. ``fileobj`` can be either a string, specifying
 		a filename, or a file-like object, supporting read() directly
@@ -169,13 +181,13 @@ class Template:
 			fileobj = file(fileobj)
 		
 		try:
-			return Template(fileobj.read())	
+			return Template(fileobj.read(), variables)	
 		except IOError, e:
 			raise TemplateNotFoundError("filename", msg=e)
 		
 	@staticmethod
-	def from_parsed(parsed):
-		template = Template("")
+	def from_parsed(parsed, variables=None):
+		template = Template("", variables)
 		template.parsed = parsed  # XXX: parsed is copied shallowly
 		return template
 		
@@ -201,24 +213,31 @@ class Template:
 	def handle_chain(self, value, level):
 		newlevel = self.levels.pop()
 		self.levels.append(newlevel)
-		output = "%s%s:" % ("\t"*newlevel,value)
+		output = u"%s%s:" % ("\t"*newlevel,value)
 		return (newlevel + 1,output)
 		
 	def handle_oneliner(self, value, level):
 		if value.startswith("#"):
 			return (level,"")
 			
-		return (level,"%s%s" % ("\t"*level,value))
+		return (level,u"%s%s" % ("\t"*level,value))
 		
 	def handle_text(self, value, level):
 		def q(i, v):
 			if i%2:
-				return "%s" % v
+				return u"%s" % v
 			else:
-				return "'''%s'''" % v
+				return u"'''%s'''" % v.replace("'", "\\'")
 				
 		values = [q(*iv) for iv in enumerate(self.variable.split(value))]
-		output = "%s_echo(%s)" % ("\t"*level,", ".join(values))
+		output = u"%secho(%s)" % ("\t"*level,", ".join(values))
+		return (level,output)
+		
+	def handle_trans(self, value, level):
+		n, text = value
+		output = n =="=" and (u"%secho(%s)" % ("\t"*level,text)) or \
+				u"echo(%s('''%s'''))" % (n or "",text.replace("'", "\\'"))
+##		return (level,"echo(%s_('''%s'''))" % (n or "",text.replace("'", "\\'")))
 		return (level,output)
 		
 	def walk(self, parsed):
@@ -259,7 +278,13 @@ if __name__ == "__main__":
 		%}
 		</table>
 		{% a = 'oneliner\n' %}
-		[$a]
+		This is {_:Translated text:}.
+		[$a] is an {? echo("important number!.") ?} Isn't it?
+		{upper:Uppercase string.:}
+		{=:" ".join(["Shortcut", "emit"]):}
+		{bold:Bold text:}
+		{=:"%s!" % ", ".join(["Hello", "World"]):}
+		{% echo("%}") %}
 	</body>
 	{?
 	if 10 > 5:
@@ -271,5 +296,9 @@ if __name__ == "__main__":
 </html>
 """
 	template = Template(test)
-	template["people"] = {"gugu":24, u"ali yankı":13}
+	template["people"] = {"gugu":24, "ali yankı":13}
+	template["_"] = lambda s: s
+	template["N_"] = lambda s: s.upper()
+	template["bold"] = lambda s: "<b>%s</b" % s
+	template["upper"] = lambda s: s.upper()
 	print template.render()

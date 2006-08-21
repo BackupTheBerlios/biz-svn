@@ -52,6 +52,8 @@ class BaseHandler:
 			self.setup_environ()
 			self.result = application(self.environ, self.start_response)
 			self.finish_response()
+		except KeyboardInterrupt:
+			raise 
 		except:
 			try:
 				self.handle_error()
