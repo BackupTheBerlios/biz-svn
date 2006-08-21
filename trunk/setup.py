@@ -8,7 +8,7 @@ from distutils.core import setup
 
 import biz.default
 
-scripts = ["bin/bizadmin", "bin/bizfiller", "bin/bizcatalog.py"]
+scripts = ["bin/bizadmin", "bin/bizfiller", "bin/bizcatalog"]
 
 if "--install-script" in sys.argv:
 	scripts.append("bin/biz-postinstall.py")
