@@ -1,0 +1,49 @@
+
+CHANGES
+=======
+
+0.0.43
+------
+
+    * 2006-08-24 (ytekol): More template unicode fixes.
+    * 2006-08-24 (ytekol): Template trans fix.
+    * 2006-08-24 (ytekol): ``bizcatalog`` fix (Repeat strings).
+
+0.0.42
+------
+
+    * 2006-08-19 (ytekol): Correct content-length for unicode strings.
+    * 2006-08-19 (ytekol): Template language improved.
+    * 2006-08-19 (ytekol): ``biz.catalog`` translation support.
+	* 2006-08-12 (ytekol): Default project has favicon.
+	* 2006-08-12 (ytekol): ``CachedContent``.
+
+0.0.41
+------
+    
+    * 2006-07-15 (ytekol): ``FunRoot`` and ``MiniRoot`` roots.
+    * 2006-07-15 (ytekol): ``TemplateHandler``.
+    * 2006-07-15 (ytekol): ``DataGroup`` for obtaining data from any source
+      (POST, GET, session, cookies, etc.) that has a dict-like interface.
+    * 2006-07-15 (ytekol): ``XmlContent``.
+    * 2006-07-15 (ytekol): Better unicode support???
+    * 2006-07-15 (ytekol): ``FunApplication``.
+
+0.0.39
+------
+
+    * 2006-07-01 (ytekol): Built-in ``Template`` class's ``copy`` method now
+      takes *no* parameters and equivalent to the old ``copy(True)``. For the
+      old ``copy(False``, there is a distinct method, ``copyall``.
+
+    * 2006-07-01 (ytekol): Built-in ``Template`` class now supports ``open``
+      method which accepts both a filename or a file-like object.
+
+0.0.38
+------
+
+    * 2006-06-24 (ytekol): Default project unpacker now restores permissions
+      (UNIX).
+
+    * 2006-06-24 (ytekol): Documentation is improved.
+

@@ -1,0 +1,18 @@
+Charset:
+Domain:
+
+> Login
+< Giriş
+
+> Username
+< Kullanıcı adı
+
+> Password
+< Parola
+
+> Login DENIED.
+< Girişe İZİN VERİLMEDİ.
+
+> Login OK.
+< Giriş KABUL EDİLDİ.
+

@@ -1,0 +1,31 @@
+{% # vfolder template %}
+{% # requires: header, dirs, label_dirs, label_files, files %}
+
+<html>
+	<head>
+		<title>$title</title>
+	</head>
+	
+	<body>
+		<h1>$header</h1>
+		{% if dirs
+			<h2>$label_dirs</h2>
+			<ul>
+			{% for d in dirs
+				<li><a href="$d.href">$d.name</a></li>
+			%}
+			</ul>
+		%}
+		
+		{% if files
+			<h2>$label_files</h2>
+			<ul>
+			{% for f in files
+				<li><a href="$f.href">$f.name</a></li>
+			%}
+			</ul>
+		%}
+	</body>
+</html>
+		
+		

@@ -1,0 +1,51 @@
+
+======================
+Biz Session Management
+======================
+
+
+:version: 0.0.1-0.0.35
+:date: 2006-06-01
+:author: Yüce Tekol <http://www.geocities.com/yucetekol>
+:status: Incomplete
+
+.. contents::
+
+
+Introduction
+------------
+
+[TODO: Define *session management* here]
+
+
+Basics
+------
+
+Biz employs a cookie-based session management system. On each request, session
+manager either creates a new session object if session cookie is not received,
+or retrieves it if the session cookie is reveived; the session object is then
+passed to the handler in the request. The session object is essentially a
+Python dictionary, you can store any data type in it. When the handler
+finalizes, the session manager updates its record using the received session
+object.
+
+In a Biz handler, session object might be used as the following:
+
+1) Reading::
+    
+    username = self.request.session["username"]
+
+2) Updating::
+    
+    self.response.session["username"] = "Bobo"
+
+3) Deleting::
+
+    del self.response.session["username"]
+
+4) Closing::
+
+    self.response.session.close()
+
+
+

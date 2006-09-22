@@ -1,0 +1,91 @@
+<html>
+	<head>
+		<title>{N_:Multiplication Table:}</title>
+		<style type="text/css">
+			.num
+				{ 
+					text-align: right;
+					width: 30px;
+					font-weight: bold;
+				}
+				
+			.oper
+				{
+					font-weight: bold;
+					text-align: center;
+				}
+			
+			.result
+				{
+					color: red;
+					text-align:right;
+					width: 30px;
+					font-weight: bold
+				}
+				
+			table.outertable
+				{
+					border: 1px inset;
+					background-color: #aaaaaa;
+				}
+				
+			table.innertable
+				{
+					border-style: solid;
+					background-color: cornflowerblue;
+				}
+			
+			#content
+				{
+					width: 600px;
+					margin: 0 auto;
+				}
+			
+			.header
+				{
+					color: navy;
+					background-color: blue;
+					text-align: center;
+					font-weight: bold;
+					
+				}
+				
+		</style>
+	</head>
+	
+	<body>
+		<div id="content">
+			<!--<br><br>-->
+			<table class="outertable">
+				<tr>
+					<td colspan="5"><div class="header">{N_:Multiplication table:}</div></td>
+				</tr>
+					
+			{% for x in range(1, 11)
+				{% if not (x - 1)%5
+					<tr>
+					{% lim = x %}
+				%}
+				<td>
+					<table class="innertable">
+						{% for y in range(1, 11)
+						<tr class="cell">
+							<td class="num">$x</td>
+							<td class="oper">x</td>
+							<td class="num">$y</td>
+							<td class="oper">=</td>
+							<td class="result">{=:x*y:}</td>
+						</tr>
+						%}
+					</table>
+				</td>
+				{% if not (x - 1)%5 and lim != x
+					</tr>
+				%}
+			%}
+			</table>
+		</div>
+	</body>
+</html>
+
+		
