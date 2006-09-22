@@ -1,0 +1,18 @@
+Charset:
+Domain:
+
+> Login
+< Login
+
+> Username
+< Username
+
+> Password
+< Password
+
+> Login DENIED.
+< Login DENIED.
+
+> Login OK.
+< Login OK.
+

@@ -1,0 +1,8 @@
+
+include CHANGES
+include VERSION
+include AUTHORS
+include INSTALL
+recursive-include doc *.txt *.html *.pdf
+recursive-include bin *
+
