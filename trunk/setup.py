@@ -14,7 +14,7 @@ if "--install-script" in sys.argv:
 	scripts.append("bin/biz-postinstall.py")
 
 setup(name="biz",
-		version="0.0.42",
+		version="0.0.43",
 		url="http://biz.berlios.de",
 		download_url="http://developer.berlios.de/project/showfiles.php?group_id=6616",
 		author="Yuce Tekol",

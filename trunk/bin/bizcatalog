@@ -17,7 +17,7 @@ def extract(filename):
 	parser.parse(f.read())
 	f.close()
 	
-	return [item[1][1] for item in parser.items if (item[0] == Parser.TRANS) and (item[1][0] in ["_", "N_"])]
+	return set([item[1][1] for item in parser.items if (item[0] == Parser.TRANS) and (item[1][0] in ["_", "N_"])])
 	
 def main():
 	argv = sys.argv
@@ -27,7 +27,7 @@ def main():
 	
 	strings = []
 	for arg in argv[1:]:
-		strings.extend(extract(arg))
+		strings.extend(list(extract(arg)))
 		
 	f = file("template.bic", "w")
 	print>>f, unicode.encode(bic_template % \

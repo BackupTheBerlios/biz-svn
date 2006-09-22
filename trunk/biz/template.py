@@ -21,10 +21,13 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 
+import sys
 import re
 from collections import deque
 
 from biz.errors import FileNotFoundError
+
+__VERSION__ = (0,0,89)
 
 
 class TemplateNotFoundError(FileNotFoundError):
@@ -42,13 +45,14 @@ class Parser:
 	TEXT, HEADER, END, CHAIN, ONELINER, TRANS = \
 		"text", "header", "end", "chain", "oneliner", "trans"
 	
-	def __init__(self):
+	def __init__(self, encoding=None):
 		self.handlers = [("chain",self.chainedline),
 						("oneliner",self.onelinerline),
 						("header",self.beginline),
 						("end",self.endline)]
 						
 		self.items = []
+		self.encoding = encoding or "utf-8"
 
 	def handle_header(self, groups):
 		code, = groups
@@ -66,11 +70,12 @@ class Parser:
 		self.items.append((self.ONELINER,code.strip()))
 		
 	def handle_text(self, text):
-		self.items.append((self.TEXT,"".join(text)))
+		self.items.append((self.TEXT,u"".join(text)))
 	
 	def parse(self, lines):
 		text = []
-		lines = unicode(lines, "utf-8")
+		if isinstance(lines, str):
+			lines = unicode(lines, self.encoding)
 		
 		for i, text1 in enumerate(self.paragraph.split(lines)):
 			# handle paragprah, {? ... ?}
@@ -81,6 +86,7 @@ class Parser:
 					self.items.append((self.ONELINER,l[margin:]))
 			else:
 				for j, text2 in enumerate(self.trans.split(text1)):
+					# handle trans, {XXX: ... :}
 					if j%3 == 1:
 						n = text2
 					elif j%3 == 2:
@@ -113,17 +119,33 @@ class Template:
 	variable = re.compile(r"\$[{]?([a-zA-Z][\w.]*(?:\[[\w.]\])*)[}]?")
 	body = re.compile(r"<body>(.*)</body>", re.DOTALL | re.MULTILINE)
 
-	def __init__(self, tmpl, variables=None):
+	def __init__(self, tmpl, namespace=None, encoding=None, strict=True):
+		"""{N_:
+		* namespace : set default namespace (default: {})
+		* encoding : set default encoding (default: utf-8)
+		* (NOT-WORKS) strict : set strict substitution. If any variable is missing in the
+		namespace, an exception is raised; or nonstrict substitution (if any
+		variable is missing, it is substituted with empty string) (default: True)
+		:}
+		"""
 		self.levels = deque()
 		self.levels.append(0)
+		
+		self.encoding = encoding or "utf-8"
 
-		self.variables = variables and dict(variables) or {}
+		self.namespace = namespace and dict(namespace) or {}
 		self._outlist = []
 		self.output = tmpl
 		self.changed = True
 		
 		def emitter(*args):
-			self._outlist.extend([unicode(str(a), "utf-8") for a in args])
+##			self._outlist.extend([unicode(str(a), self.encoding) for a in args])
+			for a in args:
+				if isinstance(a, unicode):
+					self._outlist.append(a)
+				else:
+					self._outlist.append(unicode(str(a), self.encoding))
+##			self._outlist.extend([unicode("%s" % a, self.encoding) for a in args])
 			
 		def loadbody(filename):
 			f = file(filename)  # XXX: try/except here
@@ -135,43 +157,61 @@ class Template:
 			f = file(filename)  # XXX: try/except here
 			text = f.read()
 			f.close()
-			p = Parser()
+			p = Parser(encoding=self.encoding)
 			p.parse(text)
 			code = "\n".join(self.walk(p.items))
-			namespace = self.variables
+			namespace = self.namespace
 			exec code in namespace
-			
-		self.variables["echo"] = emitter
-		self.variables["loadbody"] = loadbody
-		self.variables["include"] = include
-		self.variables["_"] = lambda s: s
-		self.variables["N_"] = lambda s: s
 		
-		parser = Parser()
+		self.namespace["echo"] = emitter
+		self.namespace["loadbody"] = loadbody
+		self.namespace["include"] = include
+		self.namespace["_"] = lambda s: s
+		self.namespace["N_"] = lambda s: s
+		
+		parser = Parser(encoding)
 		parser.parse(tmpl)
 		self.parsed = parser.items
-		
-	def render(self, force=False):
+	
+	def _prep_output(self, force=False):
 		if force or self.changed:
 			self._outlist = []
 			code = u"\n".join(self.walk(self.parsed))
-			namespace = self.variables  #.copy() # XXX:
+			namespace = self.namespace  #.copy() # XXX:
 			
 			exec code in namespace
+
 			self.output = u"".join(self._outlist)
-			
 			self.changed = False
-			
-		return unicode.encode(self.output, "utf-8")
 		
-	__str__ = render
+	def render(self, force=False):
+		self._prep_output(force)			
+		return unicode.encode(self.output, self.encoding)
 		
-	def __setitem__(self, attr, value):
-		self.variables[attr] = value
+	def render_unicode(self, force=False):
+		self._prep_output(force)
+		return self.output
+		
+	def __str__(self):
+		self._prep_output()
+		return unicode.encode(self.output, self.encoding)
+		
+	def __unicode__(self):
+		self._prep_output()
+		return self.output
+		
+	def __setitem__(self, name, value):
+		self.namespace[name] = value
 		self.changed = True
 		
+	def __getitem__(self, name):
+		return self.namespace[name]
+		
+	def __delitem__(self, name):
+		del self.namespace[name]
+		
 	@staticmethod
-	def open(fileobj, variables=None):
+	def open(fileobj, namespace=None, encoding=None):
 		"""
 		loads a template from a file. ``fileobj`` can be either a string, specifying
 		a filename, or a file-like object, supporting read() directly
@@ -181,26 +221,24 @@ class Template:
 			fileobj = file(fileobj)
 		
 		try:
-			return Template(fileobj.read(), variables)	
+			return Template(fileobj.read(), namespace, encoding=encoding)
 		except IOError, e:
 			raise TemplateNotFoundError("filename", msg=e)
 		
 	@staticmethod
-	def from_parsed(parsed, variables=None):
-		template = Template("", variables)
+	def from_parsed(parsed, namespace=None, encoding=None):
+		template = Template("", namespace, encoding=encoding)
 		template.parsed = parsed  # XXX: parsed is copied shallowly
 		return template
 		
 	def copy(self):
-		return self.from_parsed(self.parsed)
+		return self.from_parsed(self.parsed, encoding=self.encoding)
 		
 	def copyall(self):
-		template = self.from_parsed(self.parsed)
-		template.variables = self.variables.copy()
-		return template			
+		return self.from_parsed(self.parsed, self.namespace, encoding=self.encoding)
 			
 	def update(self, dictionary):
-		self.variables.update(dictionary)
+		self.namespace.update(dictionary)
 		
 	def handle_header(self, value, level):
 		output = "%s%s:" % ("\t"*level,value)
@@ -235,9 +273,9 @@ class Template:
 		
 	def handle_trans(self, value, level):
 		n, text = value
-		output = n =="=" and (u"%secho(%s)" % ("\t"*level,text)) or \
-				u"echo(%s('''%s'''))" % (n or "",text.replace("'", "\\'"))
-##		return (level,"echo(%s_('''%s'''))" % (n or "",text.replace("'", "\\'")))
+		tabs = "\t"*level
+		output = n =="=" and (u"%secho(%s)" % (tabs,text)) or \
+				u"%secho(%s('''%s'''))" % (tabs,n or "",text.replace("'", "\\'"))
 		return (level,output)
 		
 	def walk(self, parsed):
@@ -297,8 +335,6 @@ if __name__ == "__main__":
 """
 	template = Template(test)
 	template["people"] = {"gugu":24, "ali yankı":13}
-	template["_"] = lambda s: s
-	template["N_"] = lambda s: s.upper()
 	template["bold"] = lambda s: "<b>%s</b" % s
 	template["upper"] = lambda s: s.upper()
 	print template.render()

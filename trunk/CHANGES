@@ -2,6 +2,13 @@
 CHANGES
 =======
 
+0.0.43
+------
+
+    * 2006-08-24 (ytekol): More template unicode fixes.
+    * 2006-08-24 (ytekol): Template trans fix.
+    * 2006-08-24 (ytekol): ``bizcatalog`` fix (Repeat strings).
+
 0.0.42
 ------
 

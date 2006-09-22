@@ -135,7 +135,8 @@ class Application:
 			
 		# assure that response is of type ``Struct``
 		if not isinstance(response, Struct):
-			raise ApplicationError(handler_name, msg=_(u"%(handler) did not return a valid response" % handler_name))
+			raise ApplicationError(handler_name,
+					msg=_(u"%(handler)s did not return a valid response" % dict(handler=handler_name)))
 			
 		return response
 			

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # response.py
 
 # Biz web application framework
