@@ -7,27 +7,32 @@ root = Root.configure()
 # Valid options:
 # -a address : (default: 127.0.0.1)
 # -p port : (default: 8000)
-# FIXME: These options not work for twisted.
+# FIXME: These options do not work for twisted.
 
 # Twisted:
 # $ twistd -ny run
 if __name__ == '__builtin__':
-	from twisted.web2 import wsgi, http, log, server
-	from twisted.application import service, strports
-	
-	test = wsgi.WSGIResource(root)
-	res = log.LogWrapperResource(test)
-	log.DefaultCommonAccessLoggingObserver().start()
-	site = server.Site(res)
-	application = service.Application("biz-root")
-	s = strports.service('tcp:8000', http.HTTPFactory(site))
-	s.setServiceParent(application)
+    from twisted.web2 import wsgi, http, log, server
+    from twisted.application import service, strports
+    
+    test = wsgi.WSGIResource(root)
+    res = log.LogWrapperResource(test)
+    log.DefaultCommonAccessLoggingObserver().start()
+    site = server.Site(res)
+    application = service.Application("biz-root")
+    s = strports.service('tcp:8000', http.HTTPFactory(site))
+    s.setServiceParent(application)
 
 # Biz (Unix-like):
 # $ ./run
 # Biz (Windows):
 # > run
 if __name__ == "__main__":
-	import biz.server
-	biz.server.run(root)
+    # first try paste server
+    try:
+        from paste.httpserver import serve
+        serve(root, host="127.0.0.1", port="8000")
+    except:
+        import biz.server
+        biz.server.run(root)
 

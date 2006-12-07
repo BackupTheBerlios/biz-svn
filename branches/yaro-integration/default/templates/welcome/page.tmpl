@@ -1,6 +1,6 @@
 
 {% links = [("Biz Homepage","http://biz.berlios.de"), ("Python Home", "http://www.python.org")] %}
-{% modes = [("Home", "/welcome"), ("Tutorial","/welcome/tutorial"), ("Docs","/welcome/docs")] %}
+{% modes = [("Home",url_for("welcome")), ("Tutorial",url_for("welcome", "tutorial")), ("Docs",url_for("welcome", "docs"))] %}
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -10,7 +10,7 @@
     <title>
       WelcomeBiz
     </title>
-    <link rel="stylesheet" type="text/css" href="/welcome/_files_/style.css" />
+    <link rel="stylesheet" type="text/css" href="{=:url_for('welcome', '_files_'):}/style.css" />
   </head>
   <body>
     <div id="head">
@@ -38,9 +38,9 @@
 			</div>
           <div class="content">
 			{% if pagemode == "home"
-				{% body = loadbody("htdocs/welcome/welcome.html") %}
+				{% body = loadbody("/".join([basepath, "htdocs/welcome/welcome.html"])) %}
 			%} else {%
-				{% body = loadbody("doc/%s.html" % pagemode) %}
+				{% body = loadbody("/".join([basepath, "doc/%s.html" % pagemode])) %}
 			%}
   
 			$body
@@ -52,7 +52,7 @@
           <div class="top"></div>
           <div class="content">
 			<div align="center">
-				<img src="/welcome/_files_/images/bizlogo.png" alt="Biz logo" width="130" />
+				<img src="{=:url_for('welcome', '_files_'):}/images/bizlogo.png" alt="Biz logo" width="130" />
 			</div>
 			<hr />
 		  
@@ -65,8 +65,7 @@
 				
 				<hr />
 				<div align="center">
-					<a href="http://biz.berlios.de"><img src="/welcome/_files_/images/bizlogo_sm.gif" alt="Built with BIZ" border="0"></a><br />
-					<a href="http://biz.berlios.de"><img src="/welcome/_files_/images/biz003x.png" alt="BIZ | 0.0.3X" border="0"></a><br >
+					<a href="http://biz.berlios.de"><img src="{=:url_for('welcome', '_files_'):}/images/bizlogo_sm.gif" alt="Built with BIZ" border="0"></a><br />
 				</div>
 						
           </div>

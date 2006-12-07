@@ -1,29 +1,3 @@
-# -*- coding: utf-8 -*-
-# response.py
-
-# Biz web application framework
-# Copyright (C) 2006  Yuce Tekol
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-
-from Cookie import SimpleCookie
-
-from biz.content import EmptyContent
-from biz.utility import Struct, Heads, CookieJar
-
-
 RESPONSES = {
         100: ('Continue', 'Request received, please continue'),
         101: ('Switching Protocols',
@@ -89,42 +63,3 @@ RESPONSES = {
               'The gateway server did not receive a timely response'),
         505: ('HTTP Version not supported', 'Cannot fulfill request.'),
         }
-
-
-def wsgi_response(start_response, response):
-    code, heads, content = response.get_forwsgi()
-    start_response(code, heads)
-    return content
-
-
-class Response:
-    def __init__(self, response):
-        # this try/except block is for functions that can not provide a
-        # ... response with cookies and/or sessions
-        r = response
-        try:
-            cookies = r.cookies
-            cookies.modify(r.session.sidcookie)
-            response.heads.set_cookie = cookies.getlist()
-        except AttributeError:
-            pass
-            
-        r.heads.content_type = r.content.ctype
-        r.heads.content_length = r.content._clen
-        
-        self.response = r
-
-    def get_forwsgi(self):
-        r = self.response
-        return ("%d %s" % (r.code,RESPONSES.get(r.code, ["Unknown"])[0]), \
-                r.heads._getlist(),r.content.get())
-
-
-def get_forwsgi(environ):
-    code = environ.get("biz.code", 200)
-    cont = environ["biz.content"]
-    heads = environ.get("biz.heads", Heads())
-    heads.content_type = cont.ctype
-    heads.content_length = cont._clen
-    return ("%d %s" % (code,RESPONSES.get(code, ["Unknown"])[0]), \
-            heads._getlist(),cont.get())

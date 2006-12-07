@@ -1,48 +1,46 @@
 
+import os.path
 from biz import *
 from biz.template import Template
 from biz.handlers.filehandler import FileHandler
 
 
 class DumbHandler(ArgHandler):
-	def dynamic(self):
-		q = self.q
-		
-		template = q.template.copy()
-		template["pagemode"] = self.pagemode
-		template["pagetitle"] = self.pagetitle
-		
-		self.r.content = HtmlContent(template.render())
-		
+    def dynamic(self, req):
+        env = req.environ
+        q = env["biz.q"]        
+        template = q.template.copy()
+        template["basepath"] = env["biz.basepath"]                
+        template["pagemode"] = self.pagemode
+        template["pagetitle"] = self.pagetitle
+        return Response(template.render(), content_type="text/html")
+        
 
 class WelcomeApp(Application):
-	def static(self):
-		q = self.q
-		
-		q.template = Template.open("templates/welcome/page.tmpl")
-		self._files_Handler = FileHandler
-		q._files_Handler = dict(location="htdocs/welcome")
-	
-	class Handler(DumbHandler):
-		def __init__(self, parent, name, **kwargs):
-			ArgHandler.__init__(self, parent, name, **kwargs)
-			self.pagemode = "home"
-			self.pagetitle = "Welcome"
-		
-	class docsHandler(DumbHandler):
-		def __init__(self, parent, name, **kwargs):
-			ArgHandler.__init__(self, parent, name, **kwargs)
-			self.pagemode = "docs"
-			self.pagetitle = "Documentation"
-			
-	class tutorialHandler(DumbHandler):
-		def __init__(self, parent, name, **kwargs):
-			ArgHandler.__init__(self, parent, name, **kwargs)
-			self.pagemode = "tutorial"
-			self.pagetitle = "Tutorial"
-		
+    def static(self):
+        env = self.environ
+        q = env["biz.q"]
+        q.template = Template.open(path_for("templates/welcome/page.tmpl"))
+        self._files_Handler = FileHandler
+        q._files_Handler = dict(location=path_for("htdocs/welcome"))
+    
+    class Handler(DumbHandler):
+        def __init__(self, **kwargs):
+            ArgHandler.__init__(self, **kwargs)
+            self.pagemode = "home"
+            self.pagetitle = "Welcome"
+        
+    class docsHandler(DumbHandler):
+        def __init__(self, **kwargs):
+            ArgHandler.__init__(self, **kwargs)
+            self.pagemode = "docs"
+            self.pagetitle = "Documentation"
+            
+    class tutorialHandler(DumbHandler):
+        def __init__(self, **kwargs):
+            ArgHandler.__init__(self, **kwargs)
+            self.pagemode = "tutorial"
+            self.pagetitle = "Tutorial"
+        
 def load(x):
-	return WelcomeApp(x)
-	
-
-		
+    return WelcomeApp(x)

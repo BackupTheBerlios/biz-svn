@@ -1,4 +1,4 @@
-
+#! /usr/bin/env python
 # Biz default project packer
 import biz.default
 
