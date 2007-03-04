@@ -87,7 +87,7 @@ class ApplicationInfo(object):
                     load = m.load
                 except AttributeError, e:
                     # XXX: this is also raised on AttributeError in app's constructor
-                    raise NoApplicationExistsError()  #path, source=self.cpath, msg=e)
+                    raise NoApplicationExistsError(self.mpath)  #path, source=self.cpath, msg=e)
                 
                 self.body = load(environ)
 
