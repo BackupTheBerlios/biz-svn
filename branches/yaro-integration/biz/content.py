@@ -63,8 +63,8 @@ class TextContent(Content):
 
 
 class EmptyContent(TextContent):
-	def __init__(self):
-		TextContent.__init__(self, u"")
+	def __init__(self, ctype=""):
+		TextContent.__init__(self, u"", ctype)
 
 
 class HtmlContent(TextContent):
