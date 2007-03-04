@@ -17,6 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
+import cgi
 import os.path
 
 class Struct:
@@ -41,12 +42,7 @@ class Struct:
                 k,v in self.__dict__.iteritems() if not k.startswith("_")]
                 
 
-
 class Heads(Struct):
-##  def _getdict(self):
-##      return dict([(k.replace("_", "-"),str(v)) for
-##              k,v in self.__dict__.iteritems() if not k.startswith("_")])
-
     def _getlist(self):
         r = []
         for k, v in self.__dict__.iteritems():
@@ -151,17 +147,40 @@ class UrlFor(object):
     def set_baseurl(self, baseurl):
         self.__baseurl = baseurl.rstrip("/")
         
-    def url_for(self, app, handler="", *args):
+    def urlFor(self, app="", *handlers, **kwargs):
         """Return absolute URL.
-        * app: name of the application (string)
-        * handler: handler (string)
+        + *app*: name of the application (string), don't prepend/append `/`
+        + *handlers*: handlers (list), don't prepend/append `/`
+        + *kwargs*: named parameters (FIXME)
+        
+        *handlers* are ignored if *app* is not specified.
+        
+        >>> url = UrlFor("http://localhost:8000")
+        >>> url.urlFor()
+        'http://localhost:8000/'
+        >>> url.urlFor("welcome")
+        'http://localhost:8000/welcome'
+        >>> url.urlFor("", "welcome")
+        'http://localhost:8000/'
+        >>> url.urlFor("image", "show")
+        'http://localhost:8000/image/show'
+        >>> url.urlFor("image", "show", "1")
+        'http://localhost:8000/image/show/1'
+        >>> url.urlFor("image", "show", "1", orient="horizontal")
+        'http://localhost:8000/image/show/1?orient=horizontal'
+        >>> url.urlFor("image", "show", "1", orient="horizontal", thumb="yes")
+        'http://localhost:8000/image/show/1?orient=horizontal&thumb=yes'
+        >>> url.urlFor("welcome/image")
+        'http://localhost:8000/welcome/image'
+        >>>
         """
-        return "/".join([self.__baseurl, app.strip("/"),
-                handler.strip("/")] + list(args))
+        p1 = app and ("/".join([self.__baseurl, app.strip("/")] + [h.strip("/") for h in handlers])) \
+                or "/".join([self.__baseurl, ""])
+        return kwargs and ("?".join([p1, "&".join(["%s=%s" % kv for kv in kwargs.iteritems()])])) \
+                or p1
                 
-    def redirect_to(self, app, handler="", *args, **kwargs):
-        raise RedirectionSignal(self.url_for(app, handler, *args),
-            kwargs.get("permanent", False))
+    def redirectTo(self, url, permanent=False):
+        raise RedirectionSignal(url, permanent)
 
 
 class PathFor(object):
@@ -171,12 +190,12 @@ class PathFor(object):
     def set_basepath(self, basepath):
         self.__basepath = basepath
         
-    def path_for(self, path):
+    def pathFor(self, path):
         """Return absolute path.
         """
         return os.path.join(self.__basepath, path)
 
-def shift_path(env):
+def shiftPath(env):
     if env["PATH_INFO"] in ["", "/"]:
         return ""
     pi = env["PATH_INFO"].split("/", 2)
@@ -200,9 +219,14 @@ def get_baseurl(env):
         port = ":" + port
     return "".join([url_scheme, "://", remote_addr, port, scr_name])
     
+def getFieldStorage(request):
+    return cgi.FieldStorage(environ=request.environ, 
+            fp=request.environ["wsgi.input"])
     
-##from cgi import FieldStorage
-##
-##class BizFieldStorage(FieldStorage):
-##    get = FieldStorage.getfirst
+def _test():
+    import doctest
+    doctest.testmod()
+    
+if __name__ == "__main__":
+    _test()
 

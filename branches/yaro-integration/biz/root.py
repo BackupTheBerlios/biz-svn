@@ -20,8 +20,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 import __builtin__
-from biz.utility import Struct, Heads, shift_path, UrlFor, get_baseurl, \
-        PathFor, RedirectionSignal
+from biz.utility import Struct, Heads, shiftPath, UrlFor, get_baseurl, \
+        PathFor, RedirectionSignal, getFieldStorage
 from biz.errors import *
 from biz.appinfo import ApplicationInfo
 from biz.yog import Response, Request, AbortSignal, abort, isiterable
@@ -51,10 +51,14 @@ class Root:
         self.cacheall = False
         self.basepath = basepath
         self.url_for = UrlFor()
-        __builtin__.url_for = self.url_for.url_for
-        __builtin__.redirect_to = self.url_for.redirect_to
-        __builtin__.path_for = PathFor(basepath).path_for
+        
+        # inject some useful functions into __builtin__
+        __builtin__.urlFor = self.url_for.urlFor
+        __builtin__.redirectTo = self.url_for.redirectTo
+        __builtin__.pathFor = PathFor(basepath).pathFor
         __builtin__.abort = abort
+        __builtin__.getFieldStorage = getFieldStorage
+        __builtin__.shiftPath = shiftPath
 
     def register_app(self, name, appoptions):
         """Register the application if it is not already registered.        
@@ -65,25 +69,6 @@ class Root:
         """        
         if name not in self._applist:
             self._applist[name] = ApplicationInfo(name, appoptions)
-        # XXX: maybe we should raise an exception if name is in applist
-
-##    # TODO: This is pretty ugly, make it more useful
-##    def _default_index(self, start_response):
-##        response = Struct()
-##        response.content = TextContent(_(u"Index method is left out"))
-##        response.code = 404
-##        response.heads = Heads()
-##        
-##        return self._prepare_response(start_response, Response(response))
-##        
-##    # TODO: This is pretty ugly, make it more useful
-##    def _default_error(self, start_response, code, message):
-##        response = Struct()
-##        response.content = TextContent(message)
-##        response.code = code
-##        response.heads = Heads()
-##        
-##        return self._prepare_response(start_response, Response(response))
 
     def __call__(self, environ, start_response):
         # TODO: The error handler must be put here
@@ -129,7 +114,7 @@ class Root:
         environ["biz.basepath"] = self.basepath
         environ["biz.baseurl"] = baseurl = get_baseurl(environ)
         self.url_for.set_baseurl(baseurl)
-        appname = shift_path(environ)
+        appname = shiftPath(environ)
         environ["biz.appname"] = appname
         
         # if no application name given in the URL (i.e., it is ``/``),

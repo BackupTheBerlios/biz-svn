@@ -19,7 +19,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 import types
-from biz.utility import Struct, Heads, shift_path
+from biz.utility import Struct, Heads
 from biz.errors import *
 
 __all__ = ["ArgHandler", "Application"]
@@ -61,7 +61,7 @@ class Application:
 
     def __call__(self, req):
         environ = req.environ
-        handler_name = "%sHandler" % shift_path(environ)
+        handler_name = "%sHandler" % shiftPath(environ)
         try:
             handler = getattr(self, handler_name)  # TODO: try...except here
         except AttributeError:

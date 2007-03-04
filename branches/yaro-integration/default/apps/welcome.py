@@ -20,9 +20,9 @@ class WelcomeApp(Application):
     def static(self):
         env = self.environ
         q = env["biz.q"]
-        q.template = Template.open(path_for("templates/welcome/page.tmpl"))
+        q.template = Template.open(pathFor("templates/welcome/page.bit"))
         self._files_Handler = FileHandler
-        q._files_Handler = dict(location=path_for("htdocs/welcome"))
+        q._files_Handler = dict(location=pathFor("htdocs/welcome"))
     
     class Handler(DumbHandler):
         def __init__(self, **kwargs):
