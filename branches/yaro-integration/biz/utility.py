@@ -196,10 +196,11 @@ class PathFor(object):
         return os.path.join(self.__basepath, path)
 
 def shiftPath(env):
-    if env["PATH_INFO"] in ["", "/"]:
+    path_info = env["PATH_INFO"]; script_name = env["SCRIPT_NAME"]
+    if path_info in ["", "/"]:
         return ""
-    pi = env["PATH_INFO"].split("/", 2)
-    env["SCRIPT_NAME"] = "/".join([env["SCRIPT_NAME"],pi[1]])
+    pi = path_info.split("/", 2)
+    env["SCRIPT_NAME"] = "/".join([script_name, pi[1]])
     try:
         env["PATH_INFO"] = "".join(["/", pi[2]])
     except IndexError:
@@ -222,6 +223,23 @@ def get_baseurl(env):
 def getFieldStorage(request):
     return cgi.FieldStorage(environ=request.environ, 
             fp=request.environ["wsgi.input"])
+    
+def popPath(path):
+    """Split the path into two, according to the last `/`
+    
+    >>> popPath("/images")
+    ('', '/images')
+    >>> popPath("/images/save")
+    ('/images', '/save')
+    >>> popPath("/")
+    ('', '/')
+    >>> popPath("")
+    ('', '')
+    >>> popPath("images")
+    ('', 'images')
+    """
+    ndx = path.rfind("/")
+    return (ndx >= 0) and (path[:ndx],path[ndx:]) or ("", path)
     
 def _test():
     import doctest

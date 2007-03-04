@@ -53,7 +53,7 @@ class Root:
         self.url_for = UrlFor()
         
         # inject some useful functions into __builtin__
-        __builtin__.urlFor = self.url_for.urlFor
+#        __builtin__.urlFor = self.url_for.urlFor
         __builtin__.redirectTo = self.url_for.redirectTo
         __builtin__.pathFor = PathFor(basepath).pathFor
         __builtin__.abort = abort
