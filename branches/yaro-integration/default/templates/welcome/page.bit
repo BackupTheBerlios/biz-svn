@@ -1,8 +1,8 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
 {% links = [("Biz Homepage","http://biz.berlios.de"), ("Python Home", "http://www.python.org")] %}
-{% modes = [("Home", urlFor("welcome")), ("Tutorial",urlFor("welcome/tutorial")), ("Docs",urlFor("welcome/docs"))] %}
-{% files_url = urlFor("welcome/_files_") %}
+{% modes = [("Home", urlSub("/[:appname:]")), ("Tutorial",urlSub("/[:appname:]/tutorial")), ("Docs",urlSub("/[:appname:]/docs"))] %}
+{% files_url = urlSub("/[:appname:]/_files_") %}
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>

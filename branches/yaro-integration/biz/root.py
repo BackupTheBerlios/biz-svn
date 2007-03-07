@@ -115,7 +115,6 @@ class Root:
         environ["biz.baseurl"] = baseurl = get_baseurl(environ)
         self.url_for.set_baseurl(baseurl)
         appname = shiftPath(environ)
-        environ["biz.appname"] = appname
         
         # if no application name given in the URL (i.e., it is ``/``),
         # ... call the index/default index application
@@ -124,6 +123,8 @@ class Root:
                 abort(404, _(u"%s not found") % environ["SCRIPT_NAME"])
             appname = self._index
     
+        environ["biz.appname"] = appname
+        
         try:
             app = self._applist[appname](environ)
         except KeyError, e:

@@ -13,6 +13,7 @@ class DumbHandler(ArgHandler):
         template["basepath"] = env["biz.basepath"]                
         template["pagemode"] = self.pagemode
         template["pagetitle"] = self.pagetitle
+        template["urlSub"] = self.urlSub
         return Response(template.render(), content_type="text/html")
         
 
